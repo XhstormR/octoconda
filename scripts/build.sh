@@ -19,11 +19,15 @@ elif test -f "${SRC}.xz"; then
 elif test -f "${SRC}.zst"; then
     ( cd "$PREFIX" && cat "${WORK_DIR}/${SRC}.zst" | unzstd > "${PREFIX}/${PKG_NAME}" )
     chmod 755 "${PREFIX}/${PKG_NAME}"
+elif test -f "${WORK_DIR}/${SRC}.exe"; then
+    mkdir "${PREFIX}/bin"
+    cp "${WORK_DIR}/${SRC}" "${PREFIX}/bin/${PKG_NAME}.exe"
+    chmod 755 "${PREFIX}/bin/${PKG_NAME}.exe"
 elif test -f "${WORK_DIR}/${SRC}"; then
     cp "${WORK_DIR}/${SRC}" "${PREFIX}/${PKG_NAME}"
     chmod 755 "${PREFIX}/${PKG_NAME}"
 else
-    echo "${SRC} not found, not a file, not a zip, not a tarball, not compressed"
+    echo "${SRC} not found, not a file, not a zip, not an exe, not a tarball, not compressed"
     echo "Work directory contents is:"
     ls -alF "${WORK_DIR}"
     exit 1

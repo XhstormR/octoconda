@@ -406,6 +406,8 @@ fn generate_rattler_build_recipe(
             ".xz"
         } else if file_name.ends_with(".zst") {
             ".zst"
+        } else if file_name.ends_with(".exe") {
+            ".exe"
         } else {
             ""
         };
@@ -636,6 +638,20 @@ mod tests {
         ]
     }
 
+    fn bazelisk_names() -> Vec<&'static str> {
+        vec![
+            "bazelisk-amd64.deb",
+            "bazelisk-arm64.deb",
+            "bazelisk-darwin",
+            "bazelisk-darwin-amd64",
+            "bazelisk-darwin-arm64",
+            "bazelisk-linux-amd64",
+            "bazelisk-linux-arm64",
+            "bazelisk-windows-amd64.exe",
+            "bazelisk-windows-arm64.exe",
+        ]
+    }
+
     fn caligula_names() -> Vec<&'static str> {
         vec![
             "caligula-aarch64-darwin",
@@ -840,6 +856,21 @@ mod tests {
                 (Platform::WinArm64, 5),
             ],
             &jjui_names(),
+        );
+    }
+
+    #[test]
+    fn test_bazelisk_names() {
+        platform_match_test(
+            &[
+                (Platform::LinuxAarch64, 6),
+                (Platform::Linux64, 5),
+                (Platform::Osx64, 3),
+                (Platform::OsxArm64, 4),
+                (Platform::Win64, 7),
+                (Platform::WinArm64, 8),
+            ],
+            &bazelisk_names(),
         );
     }
 
