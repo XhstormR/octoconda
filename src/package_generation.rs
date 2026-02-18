@@ -311,6 +311,7 @@ fn extract_about(
             // Fix outdated licenses
             let license_info = match license.spdx_id.as_str() {
                 "GPL-3.0" => "GPL-3.0-only",
+                "AGPL-3.0" => "AGPL-3.0-only",
                 l => l,
             };
             format!("\n  license: \"{}\"", license_info)
