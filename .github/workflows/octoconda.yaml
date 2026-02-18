@@ -11,6 +11,9 @@ on:
         description: work directory
         default: "./work_dir"
         type: string
+      filter:
+        description: "Regex filter for repositories (overrides the matrix split)"
+        type: string
   schedule:
     - cron: "2 * * * *"
 
@@ -24,13 +27,8 @@ permissions:
   id-token: write # trusted publishing
 
 jobs:
-  sync-packages:
+  build:
     runs-on: ubuntu-latest
-    env:
-      # Set environment variables with conditional defaults
-      CONFIG_FILE: ${{ github.event.inputs.configFile || 'config.toml' }}
-      WORK_DIR: ${{ github.event.inputs.workDir || './work_dir' }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -41,6 +39,82 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
+
+      - name: Build octoconda
+        run: cargo build --release
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: octoconda-binary
+          path: target/release/octoconda
+
+  sync-packages:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "a"
+            filter: "(?i)^a"
+          - name: "b"
+            filter: "(?i)^b"
+          - name: "c"
+            filter: "(?i)^c"
+          - name: "d"
+            filter: "(?i)^d"
+          - name: "e"
+            filter: "(?i)^e"
+          - name: "f"
+            filter: "(?i)^f"
+          - name: "g"
+            filter: "(?i)^g"
+          - name: "h"
+            filter: "(?i)^h"
+          - name: "i-j"
+            filter: "(?i)^[ij]"
+          - name: "k"
+            filter: "(?i)^k"
+          - name: "l"
+            filter: "(?i)^l"
+          - name: "m"
+            filter: "(?i)^m"
+          - name: "n"
+            filter: "(?i)^n"
+          - name: "o"
+            filter: "(?i)^o"
+          - name: "p-q"
+            filter: "(?i)^[pq]"
+          - name: "r"
+            filter: "(?i)^r"
+          - name: "s"
+            filter: "(?i)^s"
+          - name: "t"
+            filter: "(?i)^t"
+          - name: "u-v"
+            filter: "(?i)^[uv]"
+          - name: "w-z"
+            filter: "(?i)^[w-z0-9]"
+
+    env:
+      CONFIG_FILE: ${{ github.event.inputs.configFile || 'config.toml' }}
+      WORK_DIR: ${{ github.event.inputs.workDir || './work_dir' }}
+      FILTER: ${{ github.event.inputs.filter || matrix.filter }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Download octoconda binary
+        uses: actions/download-artifact@v4
+        with:
+          name: octoconda-binary
+
+      - name: Make binary executable
+        run: chmod +x octoconda
 
       - name: Install rattler-build (binary)
         run: |
@@ -53,7 +127,7 @@ jobs:
       - name: Run octoconda
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cargo run -- "--work-dir=${{ env.WORK_DIR }}" "--config-file=${{ env.CONFIG_FILE }}"
+        run: ./octoconda "--work-dir=${{ env.WORK_DIR }}" "--config-file=${{ env.CONFIG_FILE }}" "--filter=${FILTER}"
 
       - name: Build and upload packages
         run: |
@@ -68,7 +142,7 @@ jobs:
         if: always()
         run: |
           { \
-            echo "# Octoconda Report"; \
+            echo "# Octoconda Report (${{ matrix.name }})"; \
             echo; \
           } >> $GITHUB_STEP_SUMMARY
 
