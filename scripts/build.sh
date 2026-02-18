@@ -1,12 +1,14 @@
 #!/bin/sh
 
+set -x
+
 WORK_DIR="${PWD}"
 
 SRC="${PKG_NAME}-${PKG_VERSION}-${target_platform}"
 
 if test -f "${SRC}.zip"; then
     ( cd "$PREFIX" && unzip -n "${WORK_DIR}/${SRC}.zip" )
-    // Delete extra stuff Macs apparently stuffed into zip files:
+    # Delete extra stuff Macs apparently stuffed into zip files:
     rm -rf "$PREFIX/__MACOSX" || true
 elif test -f "${SRC}.tar.gz"; then
     ( cd "$PREFIX" && tar -xzf "${WORK_DIR}/${SRC}.tar.gz" )
@@ -87,7 +89,7 @@ for f in *; do
     fi
 done
 
-cd "${PREFIX}/bin"
+cd "${PREFIX}/bin" || exit
 
 for f in *; do
     if [[ "$f" == *"-${PKG_VERSION}"* ]]; then
