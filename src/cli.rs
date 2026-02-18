@@ -14,6 +14,9 @@ pub struct Cli {
     pub work_dir: Option<PathBuf>,
     #[arg(long, default_value = "false")]
     pub keep_temporary_data: bool,
+    /// Only process repositories matching this regular expression
+    #[arg(long)]
+    pub filter: Option<regex::Regex>,
 }
 
 pub struct WorkDir(WorkDirInner);
