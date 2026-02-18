@@ -21,7 +21,7 @@ elif test -f "${SRC}.zst"; then
     chmod 755 "${PREFIX}/${PKG_NAME}"
 elif test -f "${WORK_DIR}/${SRC}.exe"; then
     mkdir "${PREFIX}/bin"
-    cp "${WORK_DIR}/${SRC}" "${PREFIX}/bin/${PKG_NAME}.exe"
+    cp "${WORK_DIR}/${SRC}.exe" "${PREFIX}/bin/${PKG_NAME}.exe"
     chmod 755 "${PREFIX}/bin/${PKG_NAME}.exe"
 elif test -f "${WORK_DIR}/${SRC}"; then
     cp "${WORK_DIR}/${SRC}" "${PREFIX}/${PKG_NAME}"
