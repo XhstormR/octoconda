@@ -273,6 +273,65 @@ fn extract_digest(asset: &octocrab::models::repos::Asset) -> Option<(String, Str
     })
 }
 
+/// Map deprecated SPDX license identifiers to their current equivalents.
+///
+/// Based on <https://spdx.org/licenses/> — covers all 32 deprecated identifiers
+/// that have a clear single-expression replacement.
+///
+/// Omitted (no single-ID replacement, need project-specific SPDX expressions):
+///   eCos-2.0, Net-SNMP, Nunit, wxWindows
+fn fix_spdx_license(spdx_id: &str) -> &str {
+    match spdx_id {
+        // GPL family
+        "GPL-1.0" => "GPL-1.0-only",
+        "GPL-1.0+" => "GPL-1.0-or-later",
+        "GPL-2.0" => "GPL-2.0-only",
+        "GPL-2.0+" => "GPL-2.0-or-later",
+        "GPL-3.0" => "GPL-3.0-only",
+        "GPL-3.0+" => "GPL-3.0-or-later",
+        // AGPL family
+        "AGPL-1.0" => "AGPL-1.0-only",
+        "AGPL-1.0+" => "AGPL-1.0-or-later",
+        "AGPL-3.0" => "AGPL-3.0-only",
+        "AGPL-3.0+" => "AGPL-3.0-or-later",
+        // LGPL family
+        "LGPL-2.0" => "LGPL-2.0-only",
+        "LGPL-2.0+" => "LGPL-2.0-or-later",
+        "LGPL-2.1" => "LGPL-2.1-only",
+        "LGPL-2.1+" => "LGPL-2.1-or-later",
+        "LGPL-3.0" => "LGPL-3.0-only",
+        "LGPL-3.0+" => "LGPL-3.0-or-later",
+        // GFDL family
+        "GFDL-1.1" => "GFDL-1.1-only",
+        "GFDL-1.2" => "GFDL-1.2-only",
+        "GFDL-1.3" => "GFDL-1.3-only",
+        // GPL-with-exception → SPDX WITH expressions
+        "GPL-2.0-with-autoconf-exception" => "GPL-2.0-only WITH Autoconf-exception-2.0",
+        "GPL-2.0-with-bison-exception" => "GPL-2.0-only WITH Bison-exception-2.2",
+        "GPL-2.0-with-classpath-exception" => "GPL-2.0-only WITH Classpath-exception-2.0",
+        "GPL-2.0-with-font-exception" => "GPL-2.0-only WITH Font-exception-2.0",
+        "GPL-2.0-with-GCC-exception" => "GPL-2.0-only WITH GCC-exception-2.0",
+        "GPL-3.0-with-autoconf-exception" => "GPL-3.0-only WITH Autoconf-exception-3.0",
+        "GPL-3.0-with-GCC-exception" => "GPL-3.0-only WITH GCC-exception-3.1",
+        // BSD consolidation
+        "BSD-2-Clause-FreeBSD" => "BSD-2-Clause",
+        "BSD-2-Clause-NetBSD" => "BSD-2-Clause",
+        // Other renames
+        "bzip2-1.0.5" => "bzip2-1.0.6",
+        "StandardML-NJ" => "SMLNJ",
+        l => l,
+    }
+}
+
+/// Escape a string for use inside a YAML double-quoted value.
+fn yaml_escape(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('\t', "\\t")
+}
+
 fn extract_about(
     package_version: &str,
     repository: &octocrab::models::Repository,
@@ -280,18 +339,18 @@ fn extract_about(
 ) -> String {
     let extra_section = {
         let upstream_digest = extract_digest(asset)
-            .map(|(algo, digest)| format!("\n  upstream-{algo}: \"{digest}\""))
+            .map(|(algo, digest)| format!("\n  upstream-{algo}: \"{}\"", yaml_escape(&digest)))
             .unwrap_or_default();
-        let upstream_version = format!("\n  upstream-version: \"{package_version}\"");
+        let upstream_version = format!("\n  upstream-version: \"{}\"", yaml_escape(package_version));
         let upstream_repository = repository
             .html_url
             .as_ref()
             .map(|u| u.path()[1..].to_string()) // strip leading `/`
-            .map(|u| format!("\n  upstream-repository: \"{u}\""))
+            .map(|u| format!("\n  upstream-repository: \"{}\"", yaml_escape(&u)))
             .unwrap_or_default();
         let download_url = format!(
             "\n  release-download-url: \"{}\"",
-            asset.browser_download_url
+            yaml_escape(asset.browser_download_url.as_str())
         );
         format!(
             "extra:\n  upstream-forge: github.com{upstream_digest}{upstream_version}{upstream_repository}{download_url}\n"
@@ -302,33 +361,14 @@ fn extract_about(
         let homepage = if let Some(homepage) = &repository.homepage
             && !homepage.is_empty()
         {
-            format!("  homepage: \"{homepage}\"\n")
+            format!("  homepage: \"{}\"\n", yaml_escape(homepage))
         } else {
             String::new()
         };
 
         let license = if let Some(license) = &repository.license {
-            // Fix outdated licenses
-            let license_info = match license.spdx_id.as_str() {
-                "GPL-1.0" => "GPL-1.0-only",
-                "GPL-1.0+" => "GPL-1.0-or-later",
-                "GPL-2.0" => "GPL-2.0-only",
-                "GPL-2.0+" => "GPL-2.0-or-later",
-                "GPL-3.0" => "GPL-3.0-only",
-                "GPL-3.0+" => "GPL-3.0-or-later",
-                "AGPL-1.0" => "AGPL-1.0-only",
-                "AGPL-1.0+" => "AGPL-1.0-or-later",
-                "AGPL-3.0" => "AGPL-3.0-only",
-                "AGPL-3.0+" => "AGPL-3.0-or-later",
-                "LGPL-2.0" => "LGPL-2.0-only",
-                "LGPL-2.0+" => "LGPL-2.0-or-later",
-                "LGPL-2.1" => "LGPL-2.1-only",
-                "LGPL-2.1+" => "LGPL-2.1-or-later",
-                "LGPL-3.0" => "LGPL-3.0-only",
-                "LGPL-3.0+" => "LGPL-3.0-or-later",
-                l => l,
-            };
-            format!("\n  license: \"{}\"", license_info)
+            let license_info = fix_spdx_license(&license.spdx_id);
+            format!("\n  license: \"{}\"", yaml_escape(license_info))
         } else {
             String::new()
         };
@@ -338,7 +378,7 @@ fn extract_about(
             String::new()
         };
         let summary = if let Some(description) = &repository.description {
-            format!("\n  summary: \"{}\"", description)
+            format!("\n  summary: \"{}\"", yaml_escape(description))
         } else {
             String::new()
         };
@@ -429,11 +469,15 @@ fn generate_rattler_build_recipe(
         format!("{pn}-{package_version}-{target_platform}{full_ext}")
     };
 
+    let url = yaml_escape(&url);
+    let package_version = yaml_escape(package_version);
+    let archive = yaml_escape(&archive);
+
     let content = format!(
         r#"package:
   name: {pn}
   version: "{package_version}"
-  
+
 source:
   url: "{url}"{digest}
   file_name: "{archive}"
@@ -972,5 +1016,130 @@ mod tests {
             ],
             &lazygit_names(),
         );
+    }
+
+    #[test]
+    fn test_yaml_escape_plain_string() {
+        assert_eq!(yaml_escape("hello world"), "hello world");
+    }
+
+    #[test]
+    fn test_yaml_escape_double_quotes() {
+        assert_eq!(yaml_escape(r#"say "hello""#), r#"say \"hello\""#);
+    }
+
+    #[test]
+    fn test_yaml_escape_backslash() {
+        assert_eq!(yaml_escape(r"foo\bar"), r"foo\\bar");
+    }
+
+    #[test]
+    fn test_yaml_escape_newline() {
+        assert_eq!(yaml_escape("line1\nline2"), r"line1\nline2");
+    }
+
+    #[test]
+    fn test_yaml_escape_carriage_return() {
+        assert_eq!(yaml_escape("line1\r\nline2"), r"line1\r\nline2");
+    }
+
+    #[test]
+    fn test_yaml_escape_tab() {
+        assert_eq!(yaml_escape("col1\tcol2"), r"col1\tcol2");
+    }
+
+    #[test]
+    fn test_yaml_escape_combined() {
+        assert_eq!(
+            yaml_escape("path\\to\\\"file\"\tnotes\nmore"),
+            r#"path\\to\\\"file\"\tnotes\nmore"#,
+        );
+    }
+
+    #[test]
+    fn test_fix_spdx_license_deprecated_gpl() {
+        assert_eq!(fix_spdx_license("GPL-1.0"), "GPL-1.0-only");
+        assert_eq!(fix_spdx_license("GPL-1.0+"), "GPL-1.0-or-later");
+        assert_eq!(fix_spdx_license("GPL-2.0"), "GPL-2.0-only");
+        assert_eq!(fix_spdx_license("GPL-2.0+"), "GPL-2.0-or-later");
+        assert_eq!(fix_spdx_license("GPL-3.0"), "GPL-3.0-only");
+        assert_eq!(fix_spdx_license("GPL-3.0+"), "GPL-3.0-or-later");
+    }
+
+    #[test]
+    fn test_fix_spdx_license_deprecated_agpl() {
+        assert_eq!(fix_spdx_license("AGPL-1.0"), "AGPL-1.0-only");
+        assert_eq!(fix_spdx_license("AGPL-1.0+"), "AGPL-1.0-or-later");
+        assert_eq!(fix_spdx_license("AGPL-3.0"), "AGPL-3.0-only");
+        assert_eq!(fix_spdx_license("AGPL-3.0+"), "AGPL-3.0-or-later");
+    }
+
+    #[test]
+    fn test_fix_spdx_license_deprecated_lgpl() {
+        assert_eq!(fix_spdx_license("LGPL-2.0"), "LGPL-2.0-only");
+        assert_eq!(fix_spdx_license("LGPL-2.0+"), "LGPL-2.0-or-later");
+        assert_eq!(fix_spdx_license("LGPL-2.1"), "LGPL-2.1-only");
+        assert_eq!(fix_spdx_license("LGPL-2.1+"), "LGPL-2.1-or-later");
+        assert_eq!(fix_spdx_license("LGPL-3.0"), "LGPL-3.0-only");
+        assert_eq!(fix_spdx_license("LGPL-3.0+"), "LGPL-3.0-or-later");
+    }
+
+    #[test]
+    fn test_fix_spdx_license_deprecated_gfdl() {
+        assert_eq!(fix_spdx_license("GFDL-1.1"), "GFDL-1.1-only");
+        assert_eq!(fix_spdx_license("GFDL-1.2"), "GFDL-1.2-only");
+        assert_eq!(fix_spdx_license("GFDL-1.3"), "GFDL-1.3-only");
+    }
+
+    #[test]
+    fn test_fix_spdx_license_gpl_with_exception() {
+        assert_eq!(
+            fix_spdx_license("GPL-2.0-with-autoconf-exception"),
+            "GPL-2.0-only WITH Autoconf-exception-2.0"
+        );
+        assert_eq!(
+            fix_spdx_license("GPL-2.0-with-bison-exception"),
+            "GPL-2.0-only WITH Bison-exception-2.2"
+        );
+        assert_eq!(
+            fix_spdx_license("GPL-2.0-with-classpath-exception"),
+            "GPL-2.0-only WITH Classpath-exception-2.0"
+        );
+        assert_eq!(
+            fix_spdx_license("GPL-2.0-with-font-exception"),
+            "GPL-2.0-only WITH Font-exception-2.0"
+        );
+        assert_eq!(
+            fix_spdx_license("GPL-2.0-with-GCC-exception"),
+            "GPL-2.0-only WITH GCC-exception-2.0"
+        );
+        assert_eq!(
+            fix_spdx_license("GPL-3.0-with-autoconf-exception"),
+            "GPL-3.0-only WITH Autoconf-exception-3.0"
+        );
+        assert_eq!(
+            fix_spdx_license("GPL-3.0-with-GCC-exception"),
+            "GPL-3.0-only WITH GCC-exception-3.1"
+        );
+    }
+
+    #[test]
+    fn test_fix_spdx_license_bsd_consolidation() {
+        assert_eq!(fix_spdx_license("BSD-2-Clause-FreeBSD"), "BSD-2-Clause");
+        assert_eq!(fix_spdx_license("BSD-2-Clause-NetBSD"), "BSD-2-Clause");
+    }
+
+    #[test]
+    fn test_fix_spdx_license_other_renames() {
+        assert_eq!(fix_spdx_license("bzip2-1.0.5"), "bzip2-1.0.6");
+        assert_eq!(fix_spdx_license("StandardML-NJ"), "SMLNJ");
+    }
+
+    #[test]
+    fn test_fix_spdx_license_passthrough() {
+        assert_eq!(fix_spdx_license("MIT"), "MIT");
+        assert_eq!(fix_spdx_license("Apache-2.0"), "Apache-2.0");
+        assert_eq!(fix_spdx_license("BSD-3-Clause"), "BSD-3-Clause");
+        assert_eq!(fix_spdx_license("GPL-2.0-only"), "GPL-2.0-only");
     }
 }
