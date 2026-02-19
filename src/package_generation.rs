@@ -341,7 +341,8 @@ fn extract_about(
         let upstream_digest = extract_digest(asset)
             .map(|(algo, digest)| format!("\n  upstream-{algo}: \"{}\"", yaml_escape(&digest)))
             .unwrap_or_default();
-        let upstream_version = format!("\n  upstream-version: \"{}\"", yaml_escape(package_version));
+        let upstream_version =
+            format!("\n  upstream-version: \"{}\"", yaml_escape(package_version));
         let upstream_repository = repository
             .html_url
             .as_ref()
@@ -373,12 +374,12 @@ fn extract_about(
             String::new()
         };
         let summary_text = if let Some(description) = &repository.description {
-            description.to_owned()
+            description.trim().to_owned()
         } else {
             String::new()
         };
         let summary = if let Some(description) = &repository.description {
-            format!("\n  summary: \"{}\"", yaml_escape(description))
+            format!("\n  summary: \"{}\"", yaml_escape(description.trim()))
         } else {
             String::new()
         };
