@@ -3,6 +3,8 @@
 
 use std::collections::HashMap;
 
+use rand::seq::SliceRandom;
+
 use crate::package_generation::VersionPackagingStatus;
 
 mod cli;
@@ -67,12 +69,15 @@ fn main() -> Result<(), anyhow::Error> {
             let mut result = HashMap::new();
             let mut package_count = 0;
 
-            for package in config.packages.iter().filter(|p| {
+            let mut packages: Vec<_> = config.packages.iter().filter(|p| {
                 cli.filter.as_ref().is_none_or(|re| {
                     let full_name = format!("{}/{}", p.repository.owner, p.repository.repo);
                     re.is_match(&full_name)
                 })
-            }) {
+            }).collect();
+            packages.shuffle(&mut rand::rng());
+
+            for package in packages {
                 let repo_packages = &repo_packages;
 
                 let (repository, releases) =

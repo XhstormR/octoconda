@@ -4668,6 +4668,7 @@ repository = "sourcefrog/cargo-mutants"
 
 [[packages]]
 repository = "sourcegraph/src-cli"
+name = "sourcegraph-cli"
 
 [[packages]]
 repository = "sourcemeta/jsonschema"

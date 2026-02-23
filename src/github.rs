@@ -39,11 +39,17 @@ impl Github {
         octocrab::models::Repository,
         Vec<(octocrab::models::repos::Release, (String, u32))>,
     )> {
+        use std::collections::HashSet;
         use tokio_stream::StreamExt;
 
         eprintln!("GH: querying {}/{}", repository.owner, repository.repo);
 
         let mut releases_result = Vec::new();
+        // GitHub's offset-based pagination can return the same release on
+        // consecutive pages when new releases are published during the fetch.
+        // Deduplicate by (version, build_number) to avoid generating the same
+        // recipe twice.
+        let mut seen_versions: HashSet<(String, u32)> = HashSet::new();
 
         let repo = self.octocrab.repos(&repository.owner, &repository.repo);
         let repo_result = repo.get().await.context("Failed to get repository data")?;
@@ -84,7 +90,9 @@ impl Github {
                 && (build.is_empty() || build.chars().any(|c| c.is_ascii_digit()))
             {
                 let build_number: u32 = build.parse().unwrap_or(0);
-                releases_result.push((release, (version, build_number)));
+                if seen_versions.insert((version.clone(), build_number)) {
+                    releases_result.push((release, (version, build_number)));
+                }
             } else {
                 eprintln!("Invalid version when looking at {package_name}: {version} ({build})");
                 continue;
