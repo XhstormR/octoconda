@@ -993,6 +993,42 @@ mod tests {
         );
     }
 
+    fn oxfmt_names() -> Vec<&'static str> {
+        vec![
+            "oxfmt-darwin-arm64",
+            "oxfmt-darwin-arm64.tar.gz",
+            "oxfmt-darwin-x64",
+            "oxfmt-darwin-x64.tar.gz",
+            "oxfmt-linux-arm64-gnu",
+            "oxfmt-linux-arm64-gnu.tar.gz",
+            "oxfmt-linux-arm64-musl",
+            "oxfmt-linux-arm64-musl.tar.gz",
+            "oxfmt-linux-x64-gnu",
+            "oxfmt-linux-x64-gnu.tar.gz",
+            "oxfmt-linux-x64-musl",
+            "oxfmt-linux-x64-musl.tar.gz",
+            "oxfmt-win32-arm64.exe",
+            "oxfmt-win32-arm64.zip",
+            "oxfmt-win32-x64.exe",
+            "oxfmt-win32-x64.zip",
+        ]
+    }
+
+    #[test]
+    fn test_oxfmt_names() {
+        platform_match_test(
+            &[
+                (Platform::LinuxAarch64, 4),
+                (Platform::Linux64, 8),
+                (Platform::OsxArm64, 0),
+                (Platform::Osx64, 2),
+                (Platform::Win64, 14),
+                (Platform::WinArm64, 12),
+            ],
+            &oxfmt_names(),
+        );
+    }
+
     #[test]
     fn test_yaml_escape_plain_string() {
         assert_eq!(yaml_escape("hello world"), "hello world");

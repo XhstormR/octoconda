@@ -81,14 +81,43 @@ def main():
                         help="Delete the N oldest packages")
     parser.add_argument("--delete-name", metavar="NAME",
                         help="Delete all packages with this name")
+    parser.add_argument("--delete-file", nargs="+", metavar="PLATFORM/FILENAME",
+                        help="Delete specific files (e.g. linux-64/package-1.0-h1234_0.conda)")
     args = parser.parse_args()
 
-    if args.delete_oldest is not None and args.delete_name is not None:
-        parser.error("--delete-oldest and --delete-name are mutually exclusive")
+    delete_opts = [args.delete_oldest is not None, args.delete_name is not None, args.delete_file is not None]
+    if sum(delete_opts) > 1:
+        parser.error("--delete-oldest, --delete-name, and --delete-file are mutually exclusive")
 
     channel = load_channel(args.config)
     channel_url = f"https://prefix.dev/{channel}"
     print(f"Channel: {channel_url}", file=sys.stderr)
+
+    if args.delete_file is not None:
+        api_key = os.environ.get("PREFIX_DEV_API_KEY")
+        if not api_key:
+            print("Error: PREFIX_DEV_API_KEY environment variable is required for deletion", file=sys.stderr)
+            sys.exit(1)
+        to_delete = []
+        for path in args.delete_file:
+            platform, filename = path.split("/", 1)
+            to_delete.append({"platform": platform, "filename": filename})
+        print(f"\nDeleting {len(to_delete)} packages:", file=sys.stderr)
+        total = len(to_delete)
+        failed = 0
+        for i, pkg in enumerate(to_delete, 1):
+            print(f"  [{i}/{total}] {pkg['platform']}/{pkg['filename']} ... ", end="", file=sys.stderr)
+            try:
+                delete_package(channel, pkg["platform"], pkg["filename"], api_key)
+                print("deleted", file=sys.stderr)
+            except urllib.error.HTTPError as e:
+                print(f"failed: {e.code} {e.reason}", file=sys.stderr)
+                failed += 1
+        succeeded = total - failed
+        print(f"\n{succeeded}/{total} packages deleted", file=sys.stderr)
+        if failed:
+            print(f"{failed}/{total} packages failed to delete", file=sys.stderr)
+        return
 
     packages = []
     for platform in PLATFORMS:
@@ -103,7 +132,7 @@ def main():
     if args.delete_oldest is None and args.delete_name is None:
         for pkg in packages:
             date_str = format_timestamp(pkg["timestamp"])
-            print(f"{date_str}  {pkg['platform']:20s}  {pkg['name']}-{pkg['version']}-{pkg['build_number']}")
+            print(f"{date_str}  {pkg['platform']:20s}  {pkg['platform']}/{pkg['filename']}")
         unique_names = {pkg["name"] for pkg in packages}
         print(f"\n{len(packages)} packages, {len(unique_names)} unique package names", file=sys.stderr)
         return
@@ -122,11 +151,11 @@ def main():
         to_delete = packages[:args.delete_oldest]
     print(f"\nDeleting {len(to_delete)} packages:", file=sys.stderr)
 
+    total = len(to_delete)
     failed = 0
-    for pkg in to_delete:
+    for i, pkg in enumerate(to_delete, 1):
         date_str = format_timestamp(pkg["timestamp"])
-        label = f"{pkg['name']}-{pkg['version']}-{pkg['build_number']}"
-        print(f"  {date_str}  {pkg['platform']:20s}  {label} ... ", end="", file=sys.stderr)
+        print(f"  [{i}/{total}] {date_str}  {pkg['platform']:20s}  {pkg['platform']}/{pkg['filename']} ... ", end="", file=sys.stderr)
         try:
             delete_package(channel, pkg["platform"], pkg["filename"], api_key)
             print("deleted", file=sys.stderr)
@@ -134,8 +163,10 @@ def main():
             print(f"failed: {e.code} {e.reason}", file=sys.stderr)
             failed += 1
 
+    succeeded = total - failed
+    print(f"\n{succeeded}/{total} packages deleted", file=sys.stderr)
     if failed:
-        print(f"\n{failed} of {len(to_delete)} packages failed to delete", file=sys.stderr)
+        print(f"{failed}/{total} packages failed to delete", file=sys.stderr)
 
 
 if __name__ == "__main__":

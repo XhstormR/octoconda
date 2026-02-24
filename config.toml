@@ -538,9 +538,6 @@ name = "block_goose"
 
 [[packages]]
 repository = "blopker/codebook"
-
-[[packages]]
-repository = "blopker/codebook"
 name = "codebook-lsp"
 
 [[packages]]
@@ -2499,6 +2496,7 @@ repository = "junegunn/fzf"
 
 [[packages]]
 repository = "just-every/code"
+name = "just_every_code"
 
 [[packages]]
 repository = "justjanne/powerline-go"
