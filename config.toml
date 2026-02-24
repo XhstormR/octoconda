@@ -2697,9 +2697,11 @@ repository = "knadh/listmonk"
 
 [[packages]]
 repository = "knative/client"
+name = "knative-client"
 
 [[packages]]
 repository = "knative/func"
+name = "knative-func"
 
 [[packages]]
 repository = "knqyf263/cob"
