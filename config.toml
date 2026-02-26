@@ -5279,6 +5279,7 @@ repository = "viaduct-ai/kustomize-sops"
 
 [[packages]]
 repository = "VictoriaMetrics/VictoriaMetrics"
+name = "victoria-metrics"
 
 [[packages]]
 repository = "ViRb3/wgcf"
