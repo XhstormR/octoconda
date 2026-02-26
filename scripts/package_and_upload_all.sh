@@ -34,16 +34,13 @@ for platform in "${CURRENT}/"*/; do
       if test -d "$PACKAGE_DIR"; then
         echo "******* ${package} (${count}/${RECIPE_COUNT}, ${FAILED_PACKAGES} not OK) ******"
         if test -f "${PACKAGE_DIR}/recipe.yaml"; then
-          if ( cd "${PACKAGE_DIR}" \
+          BUILD_OUTPUT=$(cd "${PACKAGE_DIR}" \
               && rattler-build publish \
                   --to "https://prefix.dev/${TARGET_CHANNEL}" \
                   --generate-attestation \
-                  --target-platform="${platform}"
-             ); then
-            SUCCESS_PACKAGES=$((SUCCESS_PACKAGES + 1))
-          else
-            FAILED_PACKAGES=$((FAILED_PACKAGES + 1))
-          fi
+                  --target-platform="${platform}" 2>&1) \
+            && SUCCESS_PACKAGES=$((SUCCESS_PACKAGES + 1)) \
+            || { FAILED_PACKAGES=$((FAILED_PACKAGES + 1)); echo "${BUILD_OUTPUT}"; }
           count=$((count + 1))
         else
           echo "        NO RECIPE FOUND, SKIPPING"
