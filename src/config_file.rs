@@ -30,6 +30,8 @@ pub enum StringOrList {
 #[derive(Deserialize)]
 pub struct TomlPackage {
     pub name: Option<String>,
+    #[serde(rename = "release-prefix")]
+    pub release_prefix: Option<String>,
     pub repository: String,
     pub platforms: Option<HashMap<Platform, StringOrList>>,
     #[serde(default)]
@@ -135,7 +137,10 @@ impl TryFrom<TomlPackage> for Package {
         let repository = Repository::try_from(value.repository.as_str())?;
         let name = conda_package_name(value.name.as_deref(), &repository.repo);
 
-        let n = &value.name;
+        let release_prefix = value
+            .release_prefix
+            .or(value.name)
+            .map(|s| s.to_lowercase());
 
         let platforms = {
             let mut result = default_platforms();
@@ -147,7 +152,7 @@ impl TryFrom<TomlPackage> for Package {
                             continue;
                         }
 
-                        if let Some(n) = n.as_ref() {
+                        if let Some(rp) = release_prefix.as_ref() {
                             let Some(current) = result.get(&k) else {
                                 return Err(anyhow::anyhow!(format!(
                                     "Can not prepend to default platform key {k}"
@@ -158,7 +163,7 @@ impl TryFrom<TomlPackage> for Package {
                                 current
                                     .iter()
                                     .map(|c| {
-                                        let mut r = n.to_string();
+                                        let mut r = rp.to_string();
                                         r.push_str(&format!(".*{c}"));
                                         r
                                     })
@@ -180,8 +185,8 @@ impl TryFrom<TomlPackage> for Package {
                     let re = v
                         .iter()
                         .map(|r| {
-                            let pattern = if let Some(n) = n {
-                                format!("^{n}.*{r}")
+                            let pattern = if let Some(rp) = &release_prefix {
+                                format!("^{rp}.*{r}")
                             } else {
                                 r.to_string()
                             };
@@ -310,9 +315,15 @@ pub fn parse_config(path: &Path) -> anyhow::Result<Config> {
 pub mod tests {
     use super::*;
 
-    pub fn get_default_patterns() -> HashMap<Platform, Vec<regex::Regex>> {
+    pub fn get_patterns_for(release_prefix: &str) -> HashMap<Platform, Vec<regex::Regex>> {
+        let rp = if release_prefix.is_empty() {
+            None
+        } else {
+            Some(release_prefix.to_string())
+        };
         let toml = TomlPackage {
             name: None,
+            release_prefix: rp,
             repository: "foo/bar".to_string(),
             platforms: None,
             deprecated: false,
@@ -335,12 +346,14 @@ pub mod tests {
         let config = toml_config(vec![
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "alice/foo".to_string(),
                 platforms: None,
                 deprecated: false,
             },
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "bob/foo".to_string(),
                 platforms: None,
                 deprecated: false,
@@ -358,12 +371,14 @@ pub mod tests {
         let config = toml_config(vec![
             TomlPackage {
                 name: Some("Foo".to_string()),
+                release_prefix: None,
                 repository: "alice/something".to_string(),
                 platforms: None,
                 deprecated: false,
             },
             TomlPackage {
                 name: Some("foo".to_string()),
+                release_prefix: None,
                 repository: "bob/other".to_string(),
                 platforms: None,
                 deprecated: false,
@@ -381,12 +396,14 @@ pub mod tests {
         let config = toml_config(vec![
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "alice/foo".to_string(),
                 platforms: None,
                 deprecated: false,
             },
             TomlPackage {
                 name: Some("foo".to_string()),
+                release_prefix: None,
                 repository: "bob/bar".to_string(),
                 platforms: None,
                 deprecated: false,
@@ -404,12 +421,14 @@ pub mod tests {
         let config = toml_config(vec![
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "alice/foo".to_string(),
                 platforms: None,
                 deprecated: false,
             },
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "bob/bar".to_string(),
                 platforms: None,
                 deprecated: false,
@@ -423,12 +442,14 @@ pub mod tests {
         let config = toml_config(vec![
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "alice/foo".to_string(),
                 platforms: None,
                 deprecated: true,
             },
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "bob/foo".to_string(),
                 platforms: None,
                 deprecated: false,
@@ -444,12 +465,14 @@ pub mod tests {
         let config = toml_config(vec![
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "alice/foo".to_string(),
                 platforms: None,
                 deprecated: true,
             },
             TomlPackage {
                 name: None,
+                release_prefix: None,
                 repository: "bob/foo".to_string(),
                 platforms: None,
                 deprecated: true,

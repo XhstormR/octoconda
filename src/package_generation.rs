@@ -2,7 +2,7 @@
 // © Tobias Hunger <tobias.hunger@gmail.com>
 
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     io::Write as _,
     path::{Path, PathBuf},
     str::FromStr,
@@ -134,9 +134,21 @@ impl PackagingStatus {
             message: "ok".to_string(),
         }
     }
+
+    pub fn in_conda_not_on_github(platform: Platform) -> Self {
+        Self {
+            platform,
+            status: Status::Skipped,
+            message: "in conda, not on github".to_string(),
+        }
+    }
 }
 
-pub fn report_results(results: &[PackageResult], total_configured: usize) -> String {
+pub fn report_results(
+    results: &[PackageResult],
+    total_configured: usize,
+    unknown_in_conda: &[String],
+) -> String {
     let mut output = String::new();
 
     if let Some(first) = results.first() {
@@ -153,6 +165,7 @@ pub fn report_results(results: &[PackageResult], total_configured: usize) -> Str
 
     let mut github_errors: Vec<String> = vec![];
     let mut no_recipe: Vec<String> = vec![];
+    let mut not_on_github: Vec<(String, Vec<String>)> = vec![];
     let mut in_conda: Vec<(String, Vec<String>)> = vec![];
     let mut generated: Vec<(String, Vec<String>)> = vec![];
 
@@ -167,14 +180,28 @@ pub fn report_results(results: &[PackageResult], total_configured: usize) -> Str
 
         let mut pkg_in_conda = vec![];
         let mut pkg_generated = vec![];
+        let mut pkg_not_on_github: Vec<String> = vec![];
 
         for v in &pkg.versions {
             let ver = v.version.as_deref().unwrap_or("?");
 
+            let is_conda_only = v
+                .status
+                .iter()
+                .all(|s| s.message == "in conda, not on github");
+            if is_conda_only {
+                let mut platforms: Vec<String> =
+                    v.status.iter().map(|s| s.platform.to_string()).collect();
+                platforms.sort();
+                platforms.dedup();
+                pkg_not_on_github.push(format!("{ver} ({})", platforms.join(", ")));
+                continue;
+            }
+
             let missing: Vec<String> = v
                 .status
                 .iter()
-                .filter(|s| s.status == Status::Skipped)
+                .filter(|s| s.status == Status::Skipped && s.message != "in conda, not on github")
                 .map(|s| s.platform.to_string())
                 .collect();
             let failed: Vec<&PackagingStatus> = v
@@ -221,6 +248,9 @@ pub fn report_results(results: &[PackageResult], total_configured: usize) -> Str
             }
         }
 
+        if !pkg_not_on_github.is_empty() {
+            not_on_github.push((display.clone(), pkg_not_on_github));
+        }
         if !pkg_in_conda.is_empty() {
             in_conda.push((display.clone(), pkg_in_conda));
         }
@@ -242,6 +272,22 @@ pub fn report_results(results: &[PackageResult], total_configured: usize) -> Str
         output.push_str("No recipe generated:\n");
         for line in &no_recipe {
             output.push_str(&format!("{line}\n"));
+        }
+        output.push('\n');
+    }
+
+    if !not_on_github.is_empty() {
+        output.push_str("Package versions in conda, not on GitHub:\n");
+        for (name, versions) in &not_on_github {
+            output.push_str(&format!("  {name}: {}\n", versions.join(", ")));
+        }
+        output.push('\n');
+    }
+
+    if !unknown_in_conda.is_empty() {
+        output.push_str("Unknown packages in conda:\n");
+        for name in unknown_in_conda {
+            output.push_str(&format!("  {name}\n"));
         }
         output.push('\n');
     }
@@ -339,6 +385,43 @@ pub fn generate_packaging_data(
         result.push(VersionPackagingStatus {
             version: Some(format!("{version_string}-{build_number}")),
             status: version_result,
+        });
+    }
+
+    // Find versions in conda that have no corresponding GitHub release
+    let github_versions: Vec<VersionWithSource> = releases
+        .iter()
+        .filter_map(|(_, (vs, _))| {
+            rattler_conda_types::Version::from_str(vs)
+                .ok()
+                .map(|v| VersionWithSource::new(v, vs))
+        })
+        .collect();
+
+    let mut conda_only: BTreeMap<String, Vec<PackagingStatus>> = BTreeMap::new();
+    for record in repo_packages {
+        if record.package_record.name.as_normalized() != package.name {
+            continue;
+        }
+        if github_versions
+            .iter()
+            .any(|gv| record.package_record.version == *gv)
+        {
+            continue;
+        }
+        let version_str = record.package_record.version.to_string();
+        let platform =
+            Platform::from_str(&record.package_record.subdir).unwrap_or(Platform::Unknown);
+        conda_only
+            .entry(version_str)
+            .or_default()
+            .push(PackagingStatus::in_conda_not_on_github(platform));
+    }
+
+    for (version_str, statuses) in conda_only {
+        result.push(VersionPackagingStatus {
+            version: Some(version_str),
+            status: statuses,
         });
     }
 
@@ -590,7 +673,7 @@ fn generate_package(
 mod tests {
     use super::*;
 
-    use crate::config_file::tests::get_default_patterns;
+    use crate::config_file::tests::get_patterns_for;
 
     fn zoxide_names() -> Vec<&'static str> {
         vec![
@@ -862,8 +945,8 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    fn platform_match_test(platforms: &[(Platform, usize)], names: &[&str]) {
-        let mut platform_patterns = get_default_patterns();
+    fn platform_match_test(platforms: &[(Platform, usize)], names: &[&str], release_prefix: &str) {
+        let mut platform_patterns = get_patterns_for(release_prefix);
 
         for (platform, expected) in platforms {
             eprintln!("Testing for platform {platform} (expected index: {expected})");
@@ -893,6 +976,7 @@ mod tests {
                 (Platform::WinArm64, 2),
             ],
             &zoxide_names(),
+            "zoxide",
         );
     }
 
@@ -906,6 +990,7 @@ mod tests {
                 (Platform::OsxArm64, 1),
             ],
             &atuin_names(),
+            "atuin",
         );
     }
 
@@ -918,6 +1003,7 @@ mod tests {
                 (Platform::OsxArm64, 0),
             ],
             &asm_lsp_names(),
+            "asm-lsp",
         );
     }
 
@@ -933,6 +1019,7 @@ mod tests {
                 (Platform::WinArm64, 6),
             ],
             &cargo_binstall_names(),
+            "cargo-binstall",
         );
     }
 
@@ -949,6 +1036,7 @@ mod tests {
                 (Platform::Win64, 23),
             ],
             &bottom_names(),
+            "bottom",
         );
     }
 
@@ -964,6 +1052,7 @@ mod tests {
                 (Platform::WinArm64, 5),
             ],
             &jjui_names(),
+            "jjui",
         );
     }
 
@@ -979,6 +1068,7 @@ mod tests {
                 (Platform::WinArm64, 8),
             ],
             &bazelisk_names(),
+            "bazelisk",
         );
     }
 
@@ -992,6 +1082,7 @@ mod tests {
                 (Platform::OsxArm64, 0),
             ],
             &caligula_names(),
+            "caligula",
         );
     }
 
@@ -1007,6 +1098,7 @@ mod tests {
                 (Platform::WinArm64, 9),
             ],
             &neovim_names(),
+            "nvim",
         );
     }
 
@@ -1020,6 +1112,7 @@ mod tests {
                 (Platform::Win64, 3),
             ],
             &neovim_names_old(),
+            "nvim",
         );
     }
 
@@ -1033,6 +1126,7 @@ mod tests {
                 (Platform::Osx64, 1),
             ],
             &shellcheck_names(),
+            "shellcheck",
         );
     }
 
@@ -1048,6 +1142,7 @@ mod tests {
                 (Platform::Win64, 5),
             ],
             &glsl_analyzer_names(),
+            "",
         );
     }
 
@@ -1064,6 +1159,7 @@ mod tests {
                 (Platform::Win32, 10),
             ],
             &lazygit_names(),
+            "lazygit",
         );
     }
 
@@ -1100,6 +1196,7 @@ mod tests {
                 (Platform::WinArm64, 12),
             ],
             &oxfmt_names(),
+            "oxfmt",
         );
     }
 

@@ -49,6 +49,7 @@ repository = "achristmascarl/rainfrog"
 
 [[packages]]
 repository = "acorn-io/runtime"
+deprecated = true
 
 [[packages]]
 repository = "actions/go-versions"
@@ -118,6 +119,7 @@ repository = "alexpasmantier/television"
 
 [[packages]]
 repository = "allero-io/allero"
+deprecated = true
 
 [[packages]]
 repository = "allyring/pvw"
@@ -208,6 +210,7 @@ repository = "aquaproj/aqua-registry-updater"
 
 [[packages]]
 repository = "aquaproj/example-go-slsa-provenance"
+deprecated = true
 
 [[packages]]
 repository = "aquaproj/registry-tool"
@@ -265,6 +268,7 @@ repository = "Arriven/db1000n"
 
 [[packages]]
 repository = "arrow2nd/nekome"
+deprecated = true
 
 [[packages]]
 repository = "arrow2nd/nimotsu"
@@ -307,6 +311,7 @@ repository = "astral-sh/ruff"
 
 [[packages]]
 repository = "astral-sh/rye"
+deprecated = true
 
 [[packages]]
 repository = "astral-sh/ty"
@@ -374,6 +379,7 @@ repository = "awslabs/ssosync"
 
 [[packages]]
 repository = "awslabs/yesiscan"
+deprecated = true
 
 [[packages]]
 repository = "axllent/mailpit"
@@ -386,6 +392,7 @@ repository = "ayoisaiah/f2"
 
 [[packages]]
 repository = "Azure/aks-engine"
+deprecated = true
 
 [[packages]]
 repository = "Azure/aztfexport"
@@ -415,6 +422,7 @@ repository = "babarot/gist"
 
 [[packages]]
 repository = "babarot/git-bump"
+deprecated = true
 
 [[packages]]
 repository = "babarot/github-labeler"
@@ -427,9 +435,11 @@ repository = "babarot/iap_curl"
 
 [[packages]]
 repository = "babarot/stein"
+deprecated = true
 
 [[packages]]
 repository = "babarot/vtest"
+deprecated = true
 
 [[packages]]
 repository = "bahdotsh/wrkflw"
@@ -442,6 +452,7 @@ repository = "barnybug/cli53"
 
 [[packages]]
 repository = "barthr/redo"
+deprecated = true
 
 [[packages]]
 repository = "bazelbuild/bazel"
@@ -627,6 +638,7 @@ repository = "BurntSushi/ripgrep"
 
 [[packages]]
 repository = "BurntSushi/xsv"
+deprecated = true
 
 [[packages]]
 repository = "busser/murmur"
@@ -669,6 +681,7 @@ repository = "caarlos0/fork-cleaner"
 
 [[packages]]
 repository = "caarlos0/mdtree"
+deprecated = true
 
 [[packages]]
 repository = "caarlos0/svu"
@@ -753,6 +766,7 @@ repository = "chaqchase/lla"
 
 [[packages]]
 repository = "charmbracelet/charm"
+deprecated = true
 
 [[packages]]
 repository = "charmbracelet/crush"
@@ -944,6 +958,7 @@ repository = "cocogitto/cocogitto"
 
 [[packages]]
 repository = "Code-Hex/gqldoc"
+deprecated = true
 
 [[packages]]
 repository = "coder/coder"
@@ -959,6 +974,7 @@ repository = "commercialhaskell/stack"
 
 [[packages]]
 repository = "compose/transporter"
+deprecated = true
 
 [[packages]]
 repository = "comtrya/comtrya"
@@ -968,6 +984,7 @@ repository = "concourse/concourse"
 
 [[packages]]
 repository = "container-tools/spectrum"
+deprecated = true
 
 [[packages]]
 repository = "container2wasm/container2wasm"
@@ -1087,6 +1104,7 @@ repository = "cyberark/kubeletctl"
 
 [[packages]]
 repository = "cybozu/assam"
+deprecated = true
 
 [[packages]]
 repository = "cycloidio/inframap"
@@ -1151,9 +1169,11 @@ repository = "datarootsio/tf-profile"
 
 [[packages]]
 repository = "datastax-labs/astra-cli"
+deprecated = true
 
 [[packages]]
 repository = "datreeio/datree"
+deprecated = true
 
 [[packages]]
 repository = "daveshanley/vacuum"
@@ -1320,6 +1340,7 @@ repository = "dstotijn/hetty"
 
 [[packages]]
 repository = "dtan4/ghrls"
+deprecated = true
 
 [[packages]]
 repository = "dtan4/k8sec"
@@ -1470,6 +1491,7 @@ repository = "F1bonacc1/process-compose"
 
 [[packages]]
 repository = "fabpot/local-php-security-checker"
+deprecated = true
 
 [[packages]]
 repository = "facebook/buck2"
@@ -1501,6 +1523,7 @@ name = "fastly_cli"
 
 [[packages]]
 repository = "fastly/terrctl"
+deprecated = true
 
 [[packages]]
 repository = "fatedier/frp"
@@ -1516,6 +1539,7 @@ repository = "ffuf/ffuf"
 
 [[packages]]
 repository = "fiatjaf/jiq"
+deprecated = true
 
 [[packages]]
 repository = "filebrowser/filebrowser"
@@ -1555,6 +1579,7 @@ repository = "fission/fission"
 
 [[packages]]
 repository = "flatt-security/shisho"
+deprecated = true
 
 [[packages]]
 repository = "flosell/iam-policy-json-to-terraform"
@@ -1735,6 +1760,7 @@ repository = "git-bug/git-bug"
 
 [[packages]]
 repository = "git-chglog/git-chglog"
+deprecated = true
 
 [[packages]]
 repository = "git-lfs/git-lfs"
@@ -1854,6 +1880,7 @@ repository = "golang-migrate/migrate"
 
 [[packages]]
 repository = "golang/mock"
+deprecated = true
 
 [[packages]]
 repository = "golangci/golangci-lint"
@@ -1963,6 +1990,7 @@ repository = "grafana/grafanactl"
 
 [[packages]]
 repository = "grafana/grizzly"
+deprecated = true
 
 [[packages]]
 repository = "grafana/jsonnet-language-server"
@@ -2112,6 +2140,7 @@ repository = "high-moctane/mocword"
 
 [[packages]]
 repository = "high-moctane/nextword"
+deprecated = true
 
 [[packages]]
 repository = "hirosassa/ksnotify"
@@ -2236,6 +2265,7 @@ repository = "int128/kauthproxy"
 
 [[packages]]
 repository = "int128/kubectl-external-forward"
+deprecated = true
 
 [[packages]]
 repository = "int128/kubelogin"
@@ -2243,6 +2273,7 @@ name = "int128_kubelogin"
 
 [[packages]]
 repository = "int128/yamlpatch"
+deprecated = true
 
 [[packages]]
 repository = "interlynk-io/sbomqs"
@@ -2803,6 +2834,7 @@ repository = "kubermatic/kubeone"
 
 [[packages]]
 repository = "kubernetes-retired/kubefed"
+deprecated = true
 
 [[packages]]
 repository = "kubernetes-sigs/aws-iam-authenticator"
@@ -2876,6 +2908,7 @@ repository = "kubevirt/kubevirt"
 
 [[packages]]
 repository = "kubewarden/kwctl"
+deprecated = true
 
 [[packages]]
 repository = "kudobuilder/kuttl"
@@ -2894,6 +2927,7 @@ repository = "KusionStack/kusion"
 
 [[packages]]
 repository = "kvz/json2hcl"
+deprecated = true
 
 [[packages]]
 repository = "kyma-project/cli"
@@ -3060,6 +3094,7 @@ repository = "LucasPickering/slumber"
 
 [[packages]]
 repository = "LukeChannings/deno-arm64"
+deprecated = true
 
 [[packages]]
 repository = "lusingander/ddv"
@@ -3159,6 +3194,7 @@ repository = "matryer/moq"
 
 [[packages]]
 repository = "mattermost/mmctl"
+deprecated = true
 
 [[packages]]
 repository = "mattn/algia"
@@ -3263,6 +3299,7 @@ repository = "microsoft/kiota"
 
 [[packages]]
 repository = "microsoft/ripgrep-prebuilt"
+name = "microsoft_ripgrep"
 
 [[packages]]
 repository = "mike-engel/jwt-cli"
@@ -3303,6 +3340,7 @@ repository = "miniscruff/changie"
 
 [[packages]]
 repository = "minishift/minishift"
+deprecated = true
 
 [[packages]]
 repository = "mintoolkit/mint"
@@ -3319,9 +3357,11 @@ repository = "mistakenelf/fm"
 
 [[packages]]
 repository = "mitchellh/golicense"
+deprecated = true
 
 [[packages]]
 repository = "mitchellh/gon"
+deprecated = true
 name = "mitchellh_gon"
 
 [[packages]]
@@ -3329,6 +3369,7 @@ repository = "mitoma/sver"
 
 [[packages]]
 repository = "mitsuhiko/insta"
+name = "cargo-insta"
 
 [[packages]]
 repository = "mitsuhiko/minijinja"
@@ -3350,6 +3391,7 @@ repository = "moby/buildkit"
 
 [[packages]]
 repository = "momaek/authy"
+deprecated = true
 
 [[packages]]
 repository = "moncho/dry"
@@ -3591,6 +3633,7 @@ repository = "notaryproject/notation"
 
 [[packages]]
 repository = "nucleuscloud/neosync"
+deprecated = true
 
 [[packages]]
 repository = "nuclio/nuclio"
@@ -3606,6 +3649,7 @@ repository = "nushell/nushell"
 
 [[packages]]
 repository = "nvarner/typst-lsp"
+deprecated = true
 
 [[packages]]
 repository = "o2sh/onefetch"
@@ -3678,9 +3722,11 @@ repository = "openai/codex"
 
 [[packages]]
 repository = "openclarity/kubeclarity"
+deprecated = true
 
 [[packages]]
 repository = "openclarity/vmclarity"
+deprecated = true
 
 [[packages]]
 repository = "opencontainers/runc"
@@ -3730,6 +3776,7 @@ repository = "oppiliappan/dijo"
 
 [[packages]]
 repository = "optiv/Mangle"
+deprecated = true
 
 [[packages]]
 repository = "Orange-OpenSource/hurl"
@@ -3790,13 +3837,12 @@ repository = "Owloops/updo"
 
 [[packages]]
 repository = "oxc-project/oxc"
-
-[[packages]]
-repository = "oxc-project/oxc"
+release-prefix = "oxfmt"
 name = "oxfmt"
 
 [[packages]]
 repository = "oxc-project/oxc"
+release-prefix = "oxlint"
 name = "oxlint"
 
 [[packages]]
@@ -3867,12 +3913,14 @@ repository = "pfnet-research/git-ghost"
 
 [[packages]]
 repository = "pglet/pglet"
+deprecated = true
 
 [[packages]]
 repository = "pgrok/pgrok"
 
 [[packages]]
 repository = "Phantas0s/devdash"
+deprecated = true
 
 [[packages]]
 repository = "phiresky/ripgrep-all"
@@ -3938,6 +3986,7 @@ repository = "PowerShell/PowerShell"
 
 [[packages]]
 repository = "praetorian-inc/gokart"
+deprecated = true
 
 [[packages]]
 repository = "praetorian-inc/noseyparker"
@@ -4030,6 +4079,7 @@ repository = "pulumi/pulumi"
 
 [[packages]]
 repository = "pulumi/tf2pulumi"
+deprecated = true
 
 [[packages]]
 repository = "purpleclay/dns53"
@@ -4082,6 +4132,7 @@ name = "rancher_cli"
 
 [[packages]]
 repository = "rancher/kim"
+deprecated = true
 
 [[packages]]
 repository = "rancher/rke"
@@ -4103,6 +4154,7 @@ repository = "realm/SwiftLint"
 
 [[packages]]
 repository = "rebuy-de/aws-nuke"
+deprecated = true
 name = "rebuy_de_aws-nuke"
 
 [[packages]]
@@ -4155,6 +4207,7 @@ repository = "rfjakob/gocryptfs"
 
 [[packages]]
 repository = "rgreinho/tfe-cli"
+deprecated = true
 
 [[packages]]
 repository = "rgwood/systemctl-tui"
@@ -4364,6 +4417,7 @@ repository = "segmentio/chamber"
 
 [[packages]]
 repository = "segmentio/golines"
+deprecated = true
 name = "segmentio_golines"
 
 [[packages]]
@@ -4437,6 +4491,7 @@ repository = "Shopify/ejson"
 
 [[packages]]
 repository = "Shopify/kubeaudit"
+deprecated = true
 
 [[packages]]
 repository = "Shopify/shadowenv"
@@ -4466,6 +4521,7 @@ repository = "siderolabs/talos"
 
 [[packages]]
 repository = "siderolabs/theila"
+deprecated = true
 
 [[packages]]
 repository = "sigi-cli/sigi"
@@ -4530,6 +4586,7 @@ repository = "skanehira/slack-reminder"
 
 [[packages]]
 repository = "skanehira/tson"
+deprecated = true
 
 [[packages]]
 repository = "skanehira/yd"
@@ -4795,6 +4852,7 @@ repository = "superfly/flyctl"
 
 [[packages]]
 repository = "suzuki-shunsuke/akoi"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/asciinema-trim"
@@ -4804,24 +4862,29 @@ repository = "suzuki-shunsuke/ci-info"
 
 [[packages]]
 repository = "suzuki-shunsuke/circleci-config-merge"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/cmdx"
 
 [[packages]]
 repository = "suzuki-shunsuke/dd-time"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/deny-self-approve"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/disable-checkout-persist-credentials"
 
 [[packages]]
 repository = "suzuki-shunsuke/discussion-slack-notifier"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/durl"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/ghalint"
@@ -4838,6 +4901,7 @@ name = "suzuki_shunsuke_ghcp"
 
 [[packages]]
 repository = "suzuki-shunsuke/ghd2i"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/ghir"
@@ -4853,15 +4917,18 @@ repository = "suzuki-shunsuke/ghtkn"
 
 [[packages]]
 repository = "suzuki-shunsuke/git-rm-branch"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/github-comment"
 
 [[packages]]
 repository = "suzuki-shunsuke/matchfile"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/migrate-urfave-cli-v3"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/mkghtag"
@@ -4874,6 +4941,7 @@ repository = "suzuki-shunsuke/pinact"
 
 [[packages]]
 repository = "suzuki-shunsuke/renovate-issue-action"
+deprecated = true
 
 [[packages]]
 repository = "suzuki-shunsuke/rgo"
@@ -4898,6 +4966,7 @@ repository = "suzuki-shunsuke/tfrstate"
 
 [[packages]]
 repository = "suzuki-shunsuke/yaml2json"
+deprecated = true
 name = "suzuki_shunsuke_yaml2json"
 
 [[packages]]
@@ -5015,6 +5084,7 @@ repository = "telepresenceio/telepresence"
 
 [[packages]]
 repository = "teler-sh/teler"
+deprecated = true
 
 [[packages]]
 repository = "tellerops/teller"
@@ -5025,12 +5095,14 @@ name = "temporalio_cli"
 
 [[packages]]
 repository = "temporalio/tctl"
+deprecated = true
 
 [[packages]]
 repository = "temporalio/temporal"
 
 [[packages]]
 repository = "tenable/terrascan"
+deprecated = true
 
 [[packages]]
 repository = "termkit/gama"
@@ -5055,6 +5127,7 @@ repository = "terratags/terratags"
 
 [[packages]]
 repository = "tfmigrator/cli"
+deprecated = true
 name = "tfmigrator_cli"
 
 [[packages]]
@@ -5062,6 +5135,7 @@ repository = "thanos-io/thanos"
 
 [[packages]]
 repository = "thazelart/terraform-validator"
+deprecated = true
 
 [[packages]]
 repository = "theryangeary/choose"
@@ -5071,6 +5145,7 @@ repository = "theseus-rs/postgresql-binaries"
 
 [[packages]]
 repository = "thestormforge/optimize-controller"
+deprecated = true
 
 [[packages]]
 repository = "theupdateframework/go-tuf"
@@ -5167,6 +5242,7 @@ repository = "truffleruby/truffleruby"
 
 [[packages]]
 repository = "trufflesecurity/driftwood"
+deprecated = true
 
 [[packages]]
 repository = "trufflesecurity/trufflehog"
@@ -5295,6 +5371,7 @@ repository = "vladimirvivien/ktop"
 
 [[packages]]
 repository = "vmware-archive/octant"
+deprecated = true
 
 [[packages]]
 repository = "vmware-tanzu/velero"
@@ -5328,12 +5405,14 @@ repository = "wasmCloud/wasmCloud"
 
 [[packages]]
 repository = "wasmerio/wapm-cli"
+deprecated = true
 
 [[packages]]
 repository = "wasmerio/wasmer"
 
 [[packages]]
 repository = "watchexec/cargo-watch"
+deprecated = true
 
 [[packages]]
 repository = "watchexec/watchexec"
@@ -5418,6 +5497,7 @@ repository = "xremap/xremap"
 
 [[packages]]
 repository = "xtaci/kcptun"
+deprecated = true
 
 [[packages]]
 repository = "xwjdsh/manssh"

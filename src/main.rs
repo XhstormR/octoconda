@@ -16,8 +16,9 @@ fn report_status(
     temporary_directory: &cli::WorkDir,
     result: &[package_generation::PackageResult],
     total_configured: usize,
+    unknown_in_conda: &[String],
 ) -> anyhow::Result<()> {
-    let report = package_generation::report_results(result, total_configured);
+    let report = package_generation::report_results(result, total_configured, unknown_in_conda);
     eprintln!("{report}");
 
     let report = format!(
@@ -50,10 +51,9 @@ fn main() -> Result<(), anyhow::Error> {
         .build()
         .unwrap()
         .block_on(async {
-            let repo_packages = conda::get_conda_package_versions(
+            let repo_packages = conda::get_all_conda_packages(
                 &config.conda.full_channel()?,
                 config.all_platforms().iter().copied(),
-                config.packages.iter().map(|p| p.name.as_str()),
             )
             .await?;
 
@@ -109,7 +109,20 @@ fn main() -> Result<(), anyhow::Error> {
                 });
             }
 
-            report_status(&temporary_directory, &result, total_packages)?;
+            let configured_names: std::collections::HashSet<&str> = config
+                .packages
+                .iter()
+                .map(|p| p.name.as_str())
+                .collect();
+            let mut unknown_in_conda: Vec<String> = repo_packages
+                .iter()
+                .map(|r| r.package_record.name.as_normalized().to_string())
+                .filter(|name| !configured_names.contains(name.as_str()))
+                .collect();
+            unknown_in_conda.sort();
+            unknown_in_conda.dedup();
+
+            report_status(&temporary_directory, &result, total_packages, &unknown_in_conda)?;
 
             Ok(())
         })

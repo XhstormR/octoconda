@@ -31,6 +31,7 @@ be packaged.
 |---|---|---|
 | `repository` | yes | GitHub repository in `owner/repo` format. |
 | `name` | no | Package name used in the Conda channel. Defaults to the repository name (the part after `/`). |
+| `release-prefix` | no | Expected prefix of release binary filenames. Defaults to the package name. Set to `""` to disable prefix matching. |
 | `platforms` | no | Override the default platform detection patterns. See [Platform Patterns](#platform-patterns) below. |
 
 ### Minimal Example
