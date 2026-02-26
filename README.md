@@ -7,7 +7,7 @@ platform-specific binaries using regex pattern matching, and generates
 for building.
 
 The tool checks an existing Conda channel for already-published versions to
-avoid duplicates and caps each run at roughly 500 packages.
+avoid duplicates.
 
 For best results: Use the github action runner and do not run this directly!
 

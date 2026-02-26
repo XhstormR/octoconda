@@ -12,14 +12,11 @@ mod github;
 mod package_generation;
 mod types;
 
-const PACKAGE_GENERATION_LIMIT: usize = 500;
-
 fn report_status(
     temporary_directory: &cli::WorkDir,
     result: &[package_generation::PackageResult],
-    stop_reason: &package_generation::StopReason,
 ) -> anyhow::Result<()> {
-    let report = package_generation::report_results(result, stop_reason);
+    let report = package_generation::report_results(result);
     eprintln!("{report}");
 
     let report = format!(
@@ -62,8 +59,6 @@ fn main() -> Result<(), anyhow::Error> {
             let gh = github::Github::new()?;
 
             let mut result: Vec<package_generation::PackageResult> = vec![];
-            let mut package_count = 0;
-            let mut stop_reason = package_generation::StopReason::Completed;
 
             let mut packages: Vec<_> = config.packages.iter().filter(|p| {
                 cli.filter.as_ref().is_none_or(|re| {
@@ -96,28 +91,22 @@ fn main() -> Result<(), anyhow::Error> {
                         }
                     };
 
-                let (versions, generated_count) = package_generation::generate_packaging_data(
+                let versions = package_generation::generate_packaging_data(
                     package,
                     &repository,
                     &releases,
                     repo_packages,
                     temporary_directory.path(),
-                    PACKAGE_GENERATION_LIMIT - package_count,
                 )?;
-                package_count += generated_count;
 
                 result.push(package_generation::PackageResult {
                     repository: repo_string,
                     name: package.name.clone(),
                     versions,
                 });
-                if package_count >= PACKAGE_GENERATION_LIMIT {
-                    stop_reason = package_generation::StopReason::PackageLimit;
-                    break;
-                }
             }
 
-            report_status(&temporary_directory, &result, &stop_reason)?;
+            report_status(&temporary_directory, &result)?;
 
             Ok(())
         })
