@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use rand::seq::SliceRandom;
+use rand::random_range;
 
 use crate::package_generation::VersionPackagingStatus;
 
@@ -75,7 +75,10 @@ fn main() -> Result<(), anyhow::Error> {
                     re.is_match(&full_name)
                 })
             }).collect();
-            packages.shuffle(&mut rand::rng());
+            if !packages.is_empty() {
+                let start = random_range(0..packages.len());
+                packages.rotate_left(start);
+            }
 
             for package in packages {
                 let repo_packages = &repo_packages;
