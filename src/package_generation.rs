@@ -16,6 +16,7 @@ use crate::config_file::Package;
 #[derive(PartialEq, Eq)]
 pub enum Status {
     Failed,
+    GithubFailed,
     Succeeded,
     Skipped,
 }
@@ -24,6 +25,7 @@ impl std::fmt::Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             Status::Failed => "❌",
+            Status::GithubFailed => "❌",
             Status::Succeeded => "✔ ",
             Status::Skipped => "❓",
         };
@@ -87,11 +89,11 @@ impl PackageResult {
 }
 
 impl PackagingStatus {
-    pub fn github_failed() -> Vec<Self> {
+    pub fn github_failed(error: &str) -> Vec<Self> {
         vec![Self {
             platform: rattler_conda_types::Platform::Unknown,
-            status: Status::Failed,
-            message: "could not retrieve release information from Github".to_string(),
+            status: Status::GithubFailed,
+            message: error.to_string(),
         }]
     }
 
@@ -173,8 +175,19 @@ pub fn report_results(
         let pkg = &results[i];
         let display = pkg.display_name();
 
-        if pkg.versions.iter().any(|v| v.version.is_none()) {
-            github_errors.push(display);
+        let gh_err = pkg.versions.iter().find(|v| {
+            v.status
+                .iter()
+                .any(|s| s.status == Status::GithubFailed)
+        });
+        if let Some(v) = gh_err {
+            let msg = v
+                .status
+                .iter()
+                .find(|s| s.status == Status::GithubFailed)
+                .map(|s| s.message.as_str())
+                .unwrap_or("unknown error");
+            github_errors.push(format!("{display}: {msg}"));
             continue;
         }
 

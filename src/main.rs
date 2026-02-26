@@ -81,13 +81,15 @@ fn main() -> Result<(), anyhow::Error> {
                 let (repository, releases) =
                     match gh.query_releases(&package.repository, &package.name).await {
                         Ok((repository, releases)) => (repository, releases),
-                        Err(_e) => {
+                        Err(e) => {
                             result.push(package_generation::PackageResult {
                                 repository: repo_string,
                                 name: package.name.clone(),
                                 versions: vec![VersionPackagingStatus {
                                     version: None,
-                                    status: package_generation::PackagingStatus::github_failed(),
+                                    status: package_generation::PackagingStatus::github_failed(
+                                        &format!("{e:#}"),
+                                    ),
                                 }],
                             });
                             continue;
