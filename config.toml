@@ -62,6 +62,8 @@ repository = "adhocteam/ssm"
 
 [[packages]]
 repository = "aduros/wasm4"
+platforms = { win-32 = "^w4-windows.zip$" }
+
 
 [[packages]]
 repository = "aereal/jsondiff"
@@ -580,6 +582,8 @@ repository = "bootandy/dust"
 
 [[packages]]
 repository = "borgbackup/borg"
+platforms = { linux-64 = "^borg-linux-glibc235-x86_64-gh", linux-aarch64 = "borg-linux-glibc235-arm64-gh" }
+
 
 [[packages]]
 repository = "boyter/scc"
@@ -1807,6 +1811,7 @@ repository = "gittuf/gittuf"
 
 [[packages]]
 repository = "gitui-org/gitui"
+platforms = { win-32 = "gitui-win.tar.gz", win-64 = "gitui-win.tar.gz", win-arm64 = "gitui-win.tar.gz", osx-64 = "gitui-mac.tar.gz", osx-arm64 = "gitui-mac.tar.gz" }
 
 [[packages]]
 repository = "gleam-lang/gleam"
@@ -5492,8 +5497,10 @@ repository = "xo/dbtpl"
 [[packages]]
 repository = "xo/usql"
 
+# WM specific!
 [[packages]]
 repository = "xremap/xremap"
+deprecated = true
 
 [[packages]]
 repository = "xtaci/kcptun"

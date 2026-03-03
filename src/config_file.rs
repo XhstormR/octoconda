@@ -45,88 +45,104 @@ pub struct Package {
     pub platforms: HashMap<Platform, Vec<regex::Regex>>,
 }
 
+const ARCHIVE: &str =
+    "\\.tar\\.gz|\\.tar\\.xz|\\.tar\\.bz2|\\.tar\\.zstd?|\\.tgz|\\.txz|\\.tbz|\\.zip";
+const COMPRESSED: &str = "\\.gz|\\.xz|\\.zstd?|\\.bz2";
+const VERSION: &str = "v\\d+([\\.[^\\.]+])*";
+const VER: &str = "([\\._-]v\\d+([\\.[^\\.]+])*)?";
+
+const X86: &str = "(intel[_-]?32|i?[3-6]86|x86|32[_-]?bit)";
+const X64: &str = "(intel[_-]?64|x86[_-]64|amd[_-]?64|x64|64[_-]?bit)";
+const ARM: &str = "(arm[_-]?64|aarch[_-]?64)";
+
+const APPLE: &str = "(apple|darwin|mac([\\._-]?os([\\._-]?x)?)?|os[\\._-]?x)";
+const WINDOWS: &str = "(windows|win(32|64)?)";
+
 fn default_platforms() -> HashMap<Platform, Vec<String>> {
+    fn linux_patterns(arch: &str, width: usize) -> Vec<String> {
+        let linux = format!("linux({width})?");
+        let extra = format!("([._-]({VERSION}|x11|unknown|gh))*");
+        let gnu = "gnu|glibc\\d*";
+        let mut result = vec![
+            format!(
+                "{arch}[\\._-](unknown[\\._-])?{linux}[\\._-]musl{extra}({COMPRESSED}|{ARCHIVE})?$"
+            ),
+            format!("{arch}[\\._-]musl[\\._-]{linux}{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{linux}[\\._-]{arch}[\\._-]musl{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!(
+                "{arch}([\\._-](unknown|{gnu}))?[\\._-]{linux}([\\._-]({gnu}))?{extra}({COMPRESSED}|{ARCHIVE})?$"
+            ),
+            format!(
+                "{linux}([\\._-](unknown|{gnu}))?[\\._-]{arch}([\\._-]({gnu}))?{extra}({COMPRESSED}|{ARCHIVE})?$"
+            ),
+        ];
+        if arch == X64 {
+            result.push(format!(
+                "{linux}([\\._-](unknown|gnu))?{extra}({COMPRESSED}|{ARCHIVE})?$"
+            ));
+        }
+        if arch == ARM {
+            result.push(format!(
+                "{linux}[\\._-]arm([\\._-](unknown|gnu))?{extra}({COMPRESSED}|{ARCHIVE})?$"
+            ));
+        }
+        result
+    }
+
+    fn mac_patterns(arch: &str) -> Vec<String> {
+        let extra = format!("([._-]({VERSION}|unknown|gh))*");
+        vec![
+            format!("{arch}([\\._-]apple)?[\\._-]{APPLE}-15{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}-15[\\._-]{arch}{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}-15[\\._-](universal|all){extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{arch}([\\._-]apple)?[\\._-]{APPLE}-14{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}-14[\\._-]{arch}{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}-14[\\._-](universal|all){extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{arch}([\\._-]apple)?[\\._-]{APPLE}-13{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}-13[\\._-]{arch}{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}-13[\\._-](universal|all){extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{arch}([\\._-]apple)?[\\._-]{APPLE}{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}[\\._-]{arch}{extra}({COMPRESSED}|{ARCHIVE})?$"),
+            format!("{APPLE}[\\._-](universal|all){extra}({COMPRESSED}|{ARCHIVE})?$"),
+        ]
+    }
+
+    fn win_patterns(arch: &str, width: usize) -> Vec<String> {
+        let mut result = vec![
+            format!(
+                "{arch}([\\._-]pc)?[\\._-]{WINDOWS}([\\._-]msvc)?{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"
+            ),
+            format!(
+                "{arch}([\\._-]pc)?[\\._-]{WINDOWS}([\\._-]msvc)?{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"
+            ),
+            format!("{WINDOWS}([\\._-]msvc)?[\\._-]{arch}{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"),
+            format!(
+                "{arch}([\\._-]pc)?[\\._-]{WINDOWS}[\\._-]gnu(llvm)?{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"
+            ),
+            format!("{arch}.exe"),
+        ];
+        if arch != ARM {
+            result.push(format!("win{width}{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"));
+        } else {
+            result.push(format!(
+                "arm([\\._-]pc)?[\\._-]{WINDOWS}([\\._-]gnu(llvm)?)?{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"
+            ));
+            result.push(format!(
+                "{WINDOWS}([\\._-]msvc)?[\\._-]arm{VER}([\\._-]exe)?({ARCHIVE}|\\.exe)?$"
+            ));
+        }
+        result
+    }
+
     HashMap::from([
-        (
-            Platform::Linux32,
-            vec![
-                "(^|[\\._-])i686[\\._-](unknown[\\._-])?linux[\\._-]musl(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])i686[\\._-](unknown[\\._-])?linux([\\._-]gnu)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])linux[\\._-](i686|x86)([\\._-]unknown)?([\\._-]gnu|[\\._-]musl)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])linux32([\\._-]unknown)?([\\._-]gnu|[\\._-]musl)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-            ],
-        ),
-        (
-            Platform::Linux64,
-            vec![
-                "(^|[\\._-])(x86_64|amd64|x64)[\\._-](unknown[\\._-])?linux[\\._-]musl(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])(x86_64|amd64|x64)[\\._-](unknown[\\._-])?linux([\\._-]gnu)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])linux[\\._-](x86_64|amd64|x64)([\\._-]unknown)?([\\._-]gnu|[\\._-]musl)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])linux64([\\._-]unknown)?([\\._-]gnu|[\\._-]musl)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-            ],
-        ),
-        (
-            Platform::LinuxAarch64,
-            vec![
-                "(^|[\\._-])(arm64|aarch64)[\\._-](unknown[\\._-])?linux[\\._-]musl(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])(arm64|aarch64)[\\._-](unknown[\\._-])?linux([\\._-]gnu)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])linux[\\._-](arm64|aarch64)([\\._-]unknown)?([\\._-]gnu|[\\._-]musl)?(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-            ],
-        ),
-        (
-            Platform::Osx64,
-            vec![
-                "(^|[\\._-])(amd64|x86_64|x64)[\\._-](apple[\\._-])?(darwin|macos|osx)(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])(darwin|macos|mac-os|osx|os-x)[\\._-](amd64|x86_64|x64)(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])(darwin|macos|mac-os|osx|os-x)(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-            ],
-        ),
-        (
-            Platform::OsxArm64,
-            vec![
-                "(^|[\\._-])(arm64|aarch64)[\\._-](apple[\\._-])?(darwin|macos|osx)(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-                "(^|[\\._-])(darwin|macos|mac-os|osx|os-x)[\\._-](arm64|aarch64)(\\.gz|\\.xz|\\.zst|\\.tar\\.gz|\\.tar\\.xz|\\.tgz|\\.txz|\\.zip)?$"
-                    .to_string(),
-            ],
-        ),
-        (
-            Platform::Win32,
-            vec![
-                "(^|[\\._-])(x86|i686)[\\._-](pc)?[\\._-]windows([\\._-]msvc)?(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-                "(^|[\\._-])(windows|win(32|64)?)[\\._-](32-bit|i386|i486|i586|i686|x86)(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-                "(^|[\\._-])win32(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-            ],
-        ),
-        (
-            Platform::Win64,
-            vec![
-                "(^|[\\._-])(amd_64|x86_64|x64)([\\._-]pc)?[\\._-]windows([\\._-]msvc)?(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-                "(^|[\\._-])(windows|win(32|64)?)[\\._-](64-bit|amd64|x86_64|x64)(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-                "(^|[\\._-])win64(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-            ],
-        ),
-        (
-            Platform::WinArm64,
-            vec![
-                "(^|[\\._-])(arm64|aarch64)([\\._-]pc)?[\\._-]windows([\\._-]msvc)?(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-                "(^|[\\._-])(windows|win(32|64)?)[\\._-](arm64|aarch64)(\\.gz|\\.xz|\\.zst|\\.zip|\\.exe)?$".to_string(),
-            ],
-        ),
+        (Platform::Linux32, linux_patterns(X86, 32)),
+        (Platform::Linux64, linux_patterns(X64, 64)),
+        (Platform::LinuxAarch64, linux_patterns(ARM, 64)),
+        (Platform::Osx64, mac_patterns(X64)),
+        (Platform::OsxArm64, mac_patterns(ARM)),
+        (Platform::Win32, win_patterns(X86, 32)),
+        (Platform::Win64, win_patterns(X64, 64)),
+        (Platform::WinArm64, win_patterns(ARM, 64)),
     ])
 }
 
@@ -137,7 +153,7 @@ impl TryFrom<TomlPackage> for Package {
         let repository = Repository::try_from(value.repository.as_str())?;
         let name = conda_package_name(value.name.as_deref(), &repository.repo);
 
-        let release_prefix = value.release_prefix.map(|s| s.to_lowercase());
+        let release_prefix = value.release_prefix.clone();
 
         let platforms = {
             let mut result = default_platforms();
@@ -146,26 +162,6 @@ impl TryFrom<TomlPackage> for Package {
                     StringOrList::String(s) => {
                         if s == "null" {
                             result.remove(&k);
-                            continue;
-                        }
-
-                        if let Some(rp) = release_prefix.as_ref() {
-                            let Some(current) = result.get(&k) else {
-                                return Err(anyhow::anyhow!(format!(
-                                    "Can not prepend to default platform key {k}"
-                                )));
-                            };
-                            result.insert(
-                                k,
-                                current
-                                    .iter()
-                                    .map(|c| {
-                                        let mut r = rp.to_string();
-                                        r.push_str(&format!(".*{c}"));
-                                        r
-                                    })
-                                    .collect::<Vec<_>>(),
-                            );
                             continue;
                         }
 
@@ -183,11 +179,13 @@ impl TryFrom<TomlPackage> for Package {
                         .iter()
                         .map(|r| {
                             let pattern = if let Some(rp) = &release_prefix {
-                                format!("^{rp}.*{r}")
+                                format!("^{rp}([\\._-].+)?[\\._-]{r}")
                             } else {
-                                r.to_string()
+                                format!("(^|[\\._-]){r}")
                             };
-                            regex::Regex::new(&pattern)
+                            regex::RegexBuilder::new(&pattern)
+                                .case_insensitive(true)
+                                .build()
                                 .context(format!("failed to parse regex for platform {k}"))
                         })
                         .collect::<anyhow::Result<Vec<_>>>()?;
