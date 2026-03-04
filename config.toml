@@ -4003,6 +4003,12 @@ repository = "pranshuparmar/witr"
 repository = "pre-commit/pre-commit"
 
 [[packages]]
+repository = "prefix-dev/pixi"
+
+[[packages]]
+repository = "prefix-dev/rattler-build"
+
+[[packages]]
 repository = "pressly/goose"
 name = "pressly_goose"
 
