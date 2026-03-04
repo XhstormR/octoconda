@@ -2,7 +2,7 @@
 // © Tobias Hunger <tobias.hunger@gmail.com>
 
 use rattler_conda_types::{
-    Channel, ChannelConfig, MatchSpec, ParseStrictness, Platform, RepoDataRecord,
+    Channel, ChannelConfig, MatchSpec, PackageNameMatcher, Platform, RepoDataRecord,
 };
 use rattler_repodata_gateway::Gateway;
 
@@ -17,7 +17,10 @@ pub async fn get_all_conda_packages(
         &ChannelConfig::default_with_root_dir(PathBuf::from(".")),
     )?;
 
-    let spec = MatchSpec::from_str("*", ParseStrictness::Lenient)?;
+    let spec = MatchSpec {
+        name: Some(PackageNameMatcher::from(glob::Pattern::new("*").unwrap())),
+        ..Default::default()
+    };
 
     let repo_data = Gateway::new()
         .query(std::iter::once(channel), platforms, std::iter::once(spec))

@@ -383,13 +383,17 @@ pub fn generate_packaging_data(
             if let Some(asset) = match_platform(&pattern[..], &r.assets[..]) {
                 found_platforms.insert(platform);
 
+                eprint!("Conda: {}/{}-{version}: ", platform, package.name);
                 if repo_packages.iter().any(|r| {
                     r.package_record.subdir == platform.to_string()
                         && r.package_record.name.as_normalized() == package.name
                         && r.package_record.version == version
                 }) {
+                    eprintln!(" -- ON SERVER");
                     version_result.push(PackagingStatus::skip_platform(platform));
                     continue;
+                } else {
+                    eprintln!(" -- not on server, need to build");
                 }
 
                 version_result.push(generate_package(

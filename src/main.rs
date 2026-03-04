@@ -40,9 +40,6 @@ fn main() -> Result<(), anyhow::Error> {
     let cli = cli::parse_cli();
 
     let config = config_file::parse_config(&cli.config_file)?;
-
-    eprintln!("max releases: {}", config.conda.max_import_releases);
-
     let temporary_directory = cli.work_directory()?;
 
     package_generation::generate_build_script(temporary_directory.path())?;
