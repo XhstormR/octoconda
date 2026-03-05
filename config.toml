@@ -1377,6 +1377,7 @@ repository = "ducaale/xh"
 
 [[packages]]
 repository = "duckdb/duckdb"
+release-prefix = "duckdb_cli"
 
 [[packages]]
 repository = "dundee/gdu"
