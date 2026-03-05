@@ -713,6 +713,7 @@ repository = "cantino/mcfly"
 
 [[packages]]
 repository = "carapace-sh/carapace-bin"
+name = "carapace"
 
 [[packages]]
 repository = "cargo-bins/cargo-binstall"
