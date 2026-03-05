@@ -3693,6 +3693,8 @@ repository = "ogham/dog"
 
 [[packages]]
 repository = "ogham/exa"
+# Replaced by eza!
+deprecated = true
 
 [[packages]]
 repository = "ohkrab/krab"
