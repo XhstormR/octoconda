@@ -536,6 +536,7 @@ fn extract_about(
             .map(|u| u.path()[1..].to_string()) // strip leading `/`
             .map(|u| format!("\n  upstream-repository: \"{}\"", yaml_escape(&u)))
             .unwrap_or_default();
+
         let download_url = format!(
             "\n  release-download-url: \"{}\"",
             yaml_escape(asset.browser_download_url.as_str())
@@ -550,6 +551,11 @@ fn extract_about(
             && !homepage.is_empty()
         {
             format!("  homepage: \"{}\"\n", yaml_escape(homepage))
+        } else {
+            String::new()
+        };
+        let repository_line = if let Some(repository_url) = repository.html_url.as_ref() {
+            format!("  repository: \"{repository_url}\"\n")
         } else {
             String::new()
         };
@@ -576,7 +582,7 @@ fn extract_about(
 about:
   description: >
     {summary_text}
-{homepage}{license}{summary}"#,
+{homepage}{repository_line}{license}{summary}"#,
         )
     };
 
