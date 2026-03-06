@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // © Tobias Hunger <tobias.hunger@gmail.com>
 
+use futures::stream::{self, StreamExt};
 use rand::random_range;
 
 use crate::package_generation::VersionPackagingStatus;
@@ -58,8 +59,6 @@ fn main() -> Result<(), anyhow::Error> {
 
             let gh = github::Github::new()?;
 
-            let mut result: Vec<package_generation::PackageResult> = vec![];
-
             let mut packages: Vec<_> = config
                 .packages
                 .iter()
@@ -77,56 +76,70 @@ fn main() -> Result<(), anyhow::Error> {
 
             let total_packages = packages.len();
 
-            for package in packages {
-                let repo_packages = &repo_packages;
-                let repo_string =
-                    format!("{}/{}", package.repository.owner, package.repository.repo);
+            let result: Vec<package_generation::PackageResult> = stream::iter(packages)
+                .map(|package| {
+                    let gh = &gh;
+                    let repo_packages = &repo_packages;
+                    let work_dir = temporary_directory.path();
+                    let max_releases = config.conda.max_import_releases;
+                    async move {
+                        let repo_string = format!(
+                            "{}/{}",
+                            package.repository.owner, package.repository.repo,
+                        );
 
-                let (repository, releases) = match gh
-                    .query_releases(
-                        &package.repository,
-                        &package.name,
-                        config.conda.max_import_releases,
-                    )
-                    .await
-                {
-                    Ok((repository, releases)) => (repository, releases),
-                    Err(e) => {
-                        result.push(package_generation::PackageResult {
+                        let (repository, releases) = match gh
+                            .query_releases(
+                                &package.repository,
+                                &package.name,
+                                max_releases,
+                            )
+                            .await
+                        {
+                            Ok(r) => r,
+                            Err(e) => {
+                                return Ok(package_generation::PackageResult {
+                                    repository: repo_string,
+                                    name: package.name.clone(),
+                                    versions: vec![VersionPackagingStatus {
+                                        version: None,
+                                        status:
+                                            package_generation::PackagingStatus::github_failed(
+                                                &format!("{e:#}"),
+                                            ),
+                                    }],
+                                });
+                            }
+                        };
+
+                        if matches!(repository.archived, Some(true)) {
+                            eprintln!(
+                                "Note: Repository \"{}\" is *ARCHIVED*. \
+                                 Consider to deprecate it.",
+                                package.repository,
+                            );
+                        }
+
+                        let versions = package_generation::generate_packaging_data(
+                            package,
+                            &repository,
+                            &releases,
+                            repo_packages,
+                            work_dir,
+                        )?;
+
+                        Ok::<_, anyhow::Error>(package_generation::PackageResult {
                             repository: repo_string,
                             name: package.name.clone(),
-                            versions: vec![VersionPackagingStatus {
-                                version: None,
-                                status: package_generation::PackagingStatus::github_failed(
-                                    &format!("{e:#}"),
-                                ),
-                            }],
-                        });
-                        continue;
+                            versions,
+                        })
                     }
-                };
-
-                if matches!(repository.archived, Some(true)) {
-                    eprintln!(
-                        "Note: Repository \"{}\" is *ARCHIVED*. Consider to deprecate it.",
-                        package.repository,
-                    );
-                }
-
-                let versions = package_generation::generate_packaging_data(
-                    package,
-                    &repository,
-                    &releases,
-                    repo_packages,
-                    temporary_directory.path(),
-                )?;
-
-                result.push(package_generation::PackageResult {
-                    repository: repo_string,
-                    name: package.name.clone(),
-                    versions,
-                });
-            }
+                })
+                .buffer_unordered(30)
+                .collect::<Vec<_>>()
+                .await
+                .into_iter()
+                .collect::<anyhow::Result<Vec<_>>>()?;
 
             let configured_names: std::collections::HashSet<&str> =
                 config.packages.iter().map(|p| p.name.as_str()).collect();

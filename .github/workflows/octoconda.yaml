@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # include:
+        include:
         #   - name: "a"
         #     filter: "(?i)^a"
         #   - name: "b"
@@ -96,7 +96,6 @@ jobs:
         #     filter: "(?i)^[uv]"
         #   - name: "w-z"
         #     filter: "(?i)^[w-z0-9]"
-        include:
           - name: "all"
             filter: "(?i)^."
 

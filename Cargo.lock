@@ -2314,6 +2314,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "futures",
  "glob",
  "octocrab",
  "rand 0.10.0",
