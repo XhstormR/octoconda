@@ -15,7 +15,7 @@ on:
         description: "Regex filter for repositories (overrides the matrix split)"
         type: string
   schedule:
-    - cron: "4 0,4,8,12,16,20 * * *"
+    - cron: "4 0,4,8,10,12,14,16,18,20 * * *"
 
 concurrency:
   group: ${{ github.workflow }}
