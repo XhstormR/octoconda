@@ -93,11 +93,11 @@ impl PackageResult {
 }
 
 impl PackagingStatus {
-    pub fn github_failed(error: &str) -> Vec<Self> {
+    pub fn github_failed(error: String) -> Vec<Self> {
         vec![Self {
             platform: rattler_conda_types::Platform::Unknown,
             status: Status::GithubFailed,
-            message: error.to_string(),
+            message: error,
         }]
     }
 
@@ -174,6 +174,8 @@ pub fn report_results(
     let mut not_on_github: Vec<(String, Vec<String>)> = vec![];
     let mut in_conda: Vec<(String, Vec<String>)> = vec![];
     let mut generated: Vec<(String, Vec<String>)> = vec![];
+
+    let mut had_success = HashSet::new();
 
     for &i in &sorted_indices {
         let pkg = &results[i];
@@ -263,8 +265,10 @@ pub fn report_results(
                 let formatted = format!("{ver}{missing_note}");
 
                 if has_generated {
+                    had_success.insert(pkg.name.clone());
                     pkg_generated.push(formatted);
                 } else {
+                    had_success.insert(pkg.name.clone());
                     pkg_in_conda.push(formatted);
                 }
             }
@@ -293,7 +297,15 @@ pub fn report_results(
     if !no_recipe.is_empty() {
         output.push_str(&format!("No recipe generated ({}):\n", no_recipe.len()));
         for ((name, reason), versions) in &no_recipe {
-            output.push_str(&format!("  {name} {}: {reason}\n", versions.join(", ")));
+            let marker = if had_success.contains(name) {
+                ""
+            } else {
+                "  *NO PACKAGE*"
+            };
+            output.push_str(&format!(
+                "  {name} {}: {reason}{marker}\n",
+                versions.join(", ")
+            ));
         }
         output.push('\n');
     }
@@ -320,13 +332,14 @@ pub fn report_results(
         output.push('\n');
     }
 
-    if !in_conda.is_empty() {
-        output.push_str(&format!("OK (in conda) ({}):\n", in_conda.len()));
-        for (name, versions) in &in_conda {
-            output.push_str(&format!("  {name}: {}\n", versions.join(", ")));
-        }
-        output.push('\n');
-    }
+    // // Do not bother to report the OK state
+    // if !in_conda.is_empty() {
+    //     output.push_str(&format!("OK (in conda) ({}):\n", in_conda.len()));
+    //     for (name, versions) in &in_conda {
+    //         output.push_str(&format!("  {name}: {}\n", versions.join(", ")));
+    //     }
+    //     output.push('\n');
+    // }
 
     if !generated.is_empty() {
         output.push_str(&format!("OK (generated) ({}):\n", generated.len()));

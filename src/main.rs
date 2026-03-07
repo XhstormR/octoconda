@@ -83,17 +83,11 @@ fn main() -> Result<(), anyhow::Error> {
                     let work_dir = temporary_directory.path();
                     let max_releases = config.conda.max_import_releases;
                     async move {
-                        let repo_string = format!(
-                            "{}/{}",
-                            package.repository.owner, package.repository.repo,
-                        );
+                        let repo_string =
+                            format!("{}/{}", package.repository.owner, package.repository.repo,);
 
                         let (repository, releases) = match gh
-                            .query_releases(
-                                &package.repository,
-                                &package.name,
-                                max_releases,
-                            )
+                            .query_releases(&package.repository, &package.name, max_releases)
                             .await
                         {
                             Ok(r) => r,
@@ -103,10 +97,9 @@ fn main() -> Result<(), anyhow::Error> {
                                     name: package.name.clone(),
                                     versions: vec![VersionPackagingStatus {
                                         version: None,
-                                        status:
-                                            package_generation::PackagingStatus::github_failed(
-                                                &format!("{e:#}"),
-                                            ),
+                                        status: package_generation::PackagingStatus::github_failed(
+                                            format!("{e}"),
+                                        ),
                                     }],
                                 });
                             }
