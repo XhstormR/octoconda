@@ -38,9 +38,10 @@ pub async fn get_all_conda_packages(
 
     let mut result = Vec::new();
     for rd in repo_data {
-        for rdi in rd.iter() {
-            result.push(rdi.clone())
-        }
+        result.extend(rd.iter().cloned());
     }
+
+    result.sort_by_key(|rdr| rdr.package_record.name.as_normalized().to_string());
+
     Ok(result)
 }

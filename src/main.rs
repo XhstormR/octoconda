@@ -4,8 +4,6 @@
 use futures::stream::{self, StreamExt};
 use rand::random_range;
 
-use crate::package_generation::VersionPackagingStatus;
-
 mod cli;
 mod conda;
 mod config_file;
@@ -18,8 +16,14 @@ fn report_status(
     result: &[package_generation::PackageResult],
     total_configured: usize,
     unknown_in_conda: &[String],
+    max_releases_to_import: usize,
 ) -> anyhow::Result<()> {
-    let report = package_generation::report_results(result, total_configured, unknown_in_conda);
+    let report = package_generation::report_results(
+        result,
+        total_configured,
+        unknown_in_conda,
+        max_releases_to_import,
+    );
     eprintln!("{report}");
 
     let report = format!(
@@ -143,6 +147,7 @@ fn main() -> Result<(), anyhow::Error> {
                 &result,
                 total_packages,
                 &unknown_in_conda,
+                config.conda.max_import_releases,
             )?;
 
             Ok(())

@@ -47,10 +47,6 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn platforms(&self) -> impl Iterator<Item = &Platform> {
-        self.platform_pattern.keys()
-    }
-
     pub fn platform_pattern(&self) -> anyhow::Result<HashMap<Platform, Vec<regex::Regex>>> {
         self.platform_pattern
             .iter()
