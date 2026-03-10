@@ -5455,6 +5455,11 @@ repository = "undistro/marvin"
 [[packages]]
 repository = "unfrl/dug"
 
+# Request on discord
+[[packages]]
+repository = "unikraft/kraftkit"
+release-prefix = "kraft"
+
 [[packages]]
 repository = "UpCloudLtd/upcloud-cli"
 
