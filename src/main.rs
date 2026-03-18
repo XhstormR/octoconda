@@ -136,86 +136,134 @@ fn main() -> Result<(), anyhow::Error> {
             needs_check.extend(fully_imported);
             let packages = needs_check;
 
-            let result: Vec<package_generation::PackageResult> = stream::iter(packages)
-                .map(|package| {
+            // Group packages by repository so we query GitHub once per repo.
+            // Preserves iteration order: the first package seen for a repo
+            // determines the group's position in the stream.
+            let repo_groups: Vec<Vec<&config_file::Package>> = {
+                let mut map: std::collections::HashMap<String, usize> =
+                    std::collections::HashMap::new();
+                let mut groups: Vec<Vec<&config_file::Package>> = Vec::new();
+                for pkg in packages {
+                    let key = format!("{}/{}", pkg.repository.owner, pkg.repository.repo);
+                    if let Some(&idx) = map.get(&key) {
+                        groups[idx].push(pkg);
+                    } else {
+                        map.insert(key, groups.len());
+                        groups.push(vec![pkg]);
+                    }
+                }
+                groups
+            };
+
+            let result: Vec<package_generation::PackageResult> = stream::iter(repo_groups)
+                .map(|group| {
                     let gh = &gh;
                     let repo_packages = &repo_packages;
                     let work_dir = temporary_directory.path();
                     async move {
+                        let repo_ref = &group[0].repository;
                         let repo_string =
-                            format!("{}/{}", package.repository.owner, package.repository.repo);
+                            format!("{}/{}", repo_ref.owner, repo_ref.repo);
 
-                        let releases = match gh
-                            .query_releases(&package.repository, &package.name, max_releases)
-                            .await
-                        {
+                        let raw_releases = match gh.fetch_releases(repo_ref).await {
                             Ok(r) => r,
                             Err(e) => {
-                                return Ok(package_generation::PackageResult::GithubFailed {
-                                    repository: package.repository.to_string(),
-                                    message: format!("{e}"),
-                                });
+                                let results: Vec<_> = group
+                                    .iter()
+                                    .map(|p| package_generation::PackageResult::GithubFailed {
+                                        repository: p.repository.to_string(),
+                                        message: format!("{e}"),
+                                    })
+                                    .collect();
+                                return Ok(results);
                             }
                         };
 
-                        // Check if any release version is not yet in conda.
-                        // If everything is already imported, skip the extra
-                        // repo.get() API call.
-                        let pkg_records = conda::find_by_name(repo_packages, &package.name);
-                        let has_new = releases.iter().any(|(_, (vs, _))| {
-                            let Ok(v) = rattler_conda_types::Version::from_str(vs) else {
-                                return false;
-                            };
-                            let vws = VersionWithSource::new(v, vs);
-                            !pkg_records.iter().any(|r| r.package_record.version == vws)
-                        });
+                        let mut repo_metadata: Option<octocrab::models::Repository> = None;
+                        let mut results = Vec::with_capacity(group.len());
 
-                        if !has_new && !releases.is_empty() {
-                            return Ok(package_generation::PackageResult::Ok {
-                                repository: repo_string,
+                        for package in &group {
+                            let releases = github::filter_releases_for_package(
+                                &raw_releases,
+                                &package.name,
+                                max_releases,
+                            );
+
+                            // Check if any release version is not yet in conda.
+                            // If everything is already imported, skip the extra
+                            // repo.get() API call.
+                            let pkg_records =
+                                conda::find_by_name(repo_packages, &package.name);
+                            let has_new = releases.iter().any(|(_, (vs, _))| {
+                                let Ok(v) = rattler_conda_types::Version::from_str(vs)
+                                else {
+                                    return false;
+                                };
+                                let vws = VersionWithSource::new(v, vs);
+                                !pkg_records
+                                    .iter()
+                                    .any(|r| r.package_record.version == vws)
+                            });
+
+                            if !has_new && !releases.is_empty() {
+                                results.push(package_generation::PackageResult::Ok {
+                                    repository: repo_string.clone(),
+                                    name: package.name.clone(),
+                                    versions: vec![],
+                                });
+                                continue;
+                            }
+
+                            // Lazily fetch repo metadata (once per group).
+                            if repo_metadata.is_none() {
+                                match gh.get_repository(repo_ref).await {
+                                    Ok(r) => {
+                                        if matches!(r.archived, Some(true)) {
+                                            eprintln!(
+                                                "Note: Repository \"{repo_string}\" is \
+                                                 *ARCHIVED*. Consider to deprecate it.",
+                                            );
+                                        }
+                                        repo_metadata = Some(r);
+                                    }
+                                    Err(e) => {
+                                        results.push(
+                                            package_generation::PackageResult::GithubFailed {
+                                                repository: repo_string.clone(),
+                                                message: format!("{e}"),
+                                            },
+                                        );
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            let versions = package_generation::generate_packaging_data(
+                                package,
+                                repo_metadata.as_ref().expect("just fetched"),
+                                &releases,
+                                repo_packages,
+                                work_dir,
+                            )?;
+
+                            results.push(package_generation::PackageResult::Ok {
+                                repository: repo_string.clone(),
                                 name: package.name.clone(),
-                                versions: vec![],
+                                versions,
                             });
                         }
 
-                        let repository = match gh.get_repository(&package.repository).await {
-                            Ok(r) => r,
-                            Err(e) => {
-                                return Ok(package_generation::PackageResult::GithubFailed {
-                                    repository: package.repository.to_string(),
-                                    message: format!("{e}"),
-                                });
-                            }
-                        };
-
-                        if matches!(repository.archived, Some(true)) {
-                            eprintln!(
-                                "Note: Repository \"{}\" is *ARCHIVED*. \
-                                 Consider to deprecate it.",
-                                package.repository,
-                            );
-                        }
-
-                        let versions = package_generation::generate_packaging_data(
-                            package,
-                            &repository,
-                            &releases,
-                            repo_packages,
-                            work_dir,
-                        )?;
-
-                        Ok::<_, anyhow::Error>(package_generation::PackageResult::Ok {
-                            repository: repo_string,
-                            name: package.name.clone(),
-                            versions,
-                        })
+                        Ok::<_, anyhow::Error>(results)
                     }
                 })
                 .buffer_unordered(10)
                 .collect::<Vec<_>>()
                 .await
                 .into_iter()
-                .collect::<anyhow::Result<Vec<_>>>()?;
+                .collect::<anyhow::Result<Vec<Vec<_>>>>()?
+                .into_iter()
+                .flatten()
+                .collect();
 
             let configured_names: std::collections::HashSet<&str> =
                 config.packages.iter().map(|p| p.name.as_str()).collect();

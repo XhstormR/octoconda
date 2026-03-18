@@ -3954,13 +3954,10 @@ repository = "Owloops/updo"
 
 [[packages]]
 repository = "oxc-project/oxc"
-release-prefix = "oxfmt"
-name = "oxfmt"
-
-[[packages]]
-repository = "oxc-project/oxc"
-release-prefix = "oxlint"
-name = "oxlint"
+packages = [
+  { name = "oxfmt", release-prefix = "oxfmt" },
+  { name = "oxlint", release-prefix = "oxlint" },
+]
 
 [[packages]]
 repository = "oxipng/oxipng"

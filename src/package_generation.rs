@@ -1485,4 +1485,72 @@ mod tests {
         assert_eq!(fix_spdx_license("BSD-3-Clause"), "BSD-3-Clause");
         assert_eq!(fix_spdx_license("GPL-2.0-only"), "GPL-2.0-only");
     }
+
+    /// A combined release from oxc-project/oxc contains assets for both
+    /// oxfmt and oxlint. Verify that the "oxfmt" release-prefix only
+    /// matches oxfmt binaries, and "oxlint" only matches oxlint binaries.
+    #[test]
+    fn test_multi_package_repo_matches_disjoint_assets() {
+        let combined_assets: Vec<&str> = vec![
+            // oxfmt assets
+            "oxfmt-darwin-arm64",
+            "oxfmt-darwin-arm64.tar.gz",
+            "oxfmt-darwin-x64",
+            "oxfmt-darwin-x64.tar.gz",
+            "oxfmt-linux-arm64-gnu",
+            "oxfmt-linux-arm64-gnu.tar.gz",
+            "oxfmt-linux-arm64-musl",
+            "oxfmt-linux-arm64-musl.tar.gz",
+            "oxfmt-linux-x64-gnu",
+            "oxfmt-linux-x64-gnu.tar.gz",
+            "oxfmt-linux-x64-musl",
+            "oxfmt-linux-x64-musl.tar.gz",
+            "oxfmt-win32-arm64.exe",
+            "oxfmt-win32-arm64.zip",
+            "oxfmt-win32-x64.exe",
+            "oxfmt-win32-x64.zip",
+            // oxlint assets
+            "oxlint-darwin-arm64",
+            "oxlint-darwin-arm64.tar.gz",
+            "oxlint-darwin-x64",
+            "oxlint-darwin-x64.tar.gz",
+            "oxlint-linux-arm64-gnu",
+            "oxlint-linux-arm64-gnu.tar.gz",
+            "oxlint-linux-arm64-musl",
+            "oxlint-linux-arm64-musl.tar.gz",
+            "oxlint-linux-x64-gnu",
+            "oxlint-linux-x64-gnu.tar.gz",
+            "oxlint-linux-x64-musl",
+            "oxlint-linux-x64-musl.tar.gz",
+            "oxlint-win32-arm64.exe",
+            "oxlint-win32-arm64.zip",
+            "oxlint-win32-x64.exe",
+            "oxlint-win32-x64.zip",
+        ];
+
+        let oxfmt_patterns = get_patterns_for("oxfmt");
+        let oxlint_patterns = get_patterns_for("oxlint");
+
+        for (platform, patterns) in &oxfmt_patterns {
+            let matched = match_platform_names(patterns, &combined_assets);
+            if let Some(idx) = matched {
+                assert!(
+                    combined_assets[idx].starts_with("oxfmt"),
+                    "oxfmt patterns on {platform} matched oxlint asset: \"{}\"",
+                    combined_assets[idx],
+                );
+            }
+        }
+
+        for (platform, patterns) in &oxlint_patterns {
+            let matched = match_platform_names(patterns, &combined_assets);
+            if let Some(idx) = matched {
+                assert!(
+                    combined_assets[idx].starts_with("oxlint"),
+                    "oxlint patterns on {platform} matched oxfmt asset: \"{}\"",
+                    combined_assets[idx],
+                );
+            }
+        }
+    }
 }
