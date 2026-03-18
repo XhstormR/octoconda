@@ -56,48 +56,48 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - name: "a"
-          #   filter: "(?i)^a"
-          # - name: "b"
-          #   filter: "(?i)^b"
-          # - name: "c"
-          #   filter: "(?i)^c"
-          # - name: "d"
-          #   filter: "(?i)^d"
-          # - name: "e"
-          #   filter: "(?i)^e"
-          # - name: "f"
-          #   filter: "(?i)^f"
-          # - name: "g"
-          #   filter: "(?i)^g"
-          # - name: "h"
-          #   filter: "(?i)^h"
-          # - name: "i-j"
-          #   filter: "(?i)^[ij]"
-          # - name: "k"
-          #   filter: "(?i)^k"
-          # - name: "l"
-          #   filter: "(?i)^l"
-          # - name: "m"
-          #   filter: "(?i)^m"
-          # - name: "n"
-          #   filter: "(?i)^n"
-          # - name: "o"
-          #   filter: "(?i)^o"
-          # - name: "p-q"
-          #   filter: "(?i)^[pq]"
-          # - name: "r"
-          #   filter: "(?i)^r"
-          # - name: "s"
-          #   filter: "(?i)^s"
-          # - name: "t"
-          #   filter: "(?i)^t"
-          # - name: "u-v"
-          #   filter: "(?i)^[uv]"
-          # - name: "w-z"
-          #   filter: "(?i)^[w-z0-9]"
-          - name: "all"
-            filter: "(?i)^."
+          - name: "a"
+            filter: "(?i)^a"
+          - name: "b"
+            filter: "(?i)^b"
+          - name: "c"
+            filter: "(?i)^c"
+          - name: "d"
+            filter: "(?i)^d"
+          - name: "e"
+            filter: "(?i)^e"
+          - name: "f"
+            filter: "(?i)^f"
+          - name: "g"
+            filter: "(?i)^g"
+          - name: "h"
+            filter: "(?i)^h"
+          - name: "i-j"
+            filter: "(?i)^[ij]"
+          - name: "k"
+            filter: "(?i)^k"
+          - name: "l"
+            filter: "(?i)^l"
+          - name: "m"
+            filter: "(?i)^m"
+          - name: "n"
+            filter: "(?i)^n"
+          - name: "o"
+            filter: "(?i)^o"
+          - name: "p-q"
+            filter: "(?i)^[pq]"
+          - name: "r"
+            filter: "(?i)^r"
+          - name: "s"
+            filter: "(?i)^s"
+          - name: "t"
+            filter: "(?i)^t"
+          - name: "u-v"
+            filter: "(?i)^[uv]"
+          - name: "w-z"
+            filter: "(?i)^[w-z0-9]"
+          # - name: "all"
+          #   filter: "(?i)^."
 
     env:
       CONFIG_FILE: ${{ github.event.inputs.configFile || 'config.toml' }}
@@ -111,7 +111,7 @@ jobs:
           persist-credentials: false
 
       - name: Download octoconda binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: octoconda-binary
 
@@ -135,7 +135,7 @@ jobs:
       - name: Run octoconda
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./octoconda "--work-dir=${{ env.WORK_DIR }}" "--config-file=${{ env.CONFIG_FILE }}" "--filter=${FILTER}" "--state-file=.octoconda-state.json"
+        run: ./octoconda "--work-dir=${{ env.WORK_DIR }}" "--config-file=${{ env.CONFIG_FILE }}" "--filter=${{ env.FILTER }}" "--state-file=.octoconda-state-${{ matrix.name }}.json"
 
       - name: Build and upload packages
         run: |
