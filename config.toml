@@ -2,9 +2,11 @@
 channel = "github-releases"
 max-import-releases = 10
 
-
 [[packages]]
 repository = "01mf02/jaq"
+
+[[packages]]
+repository = "0franco/image-auditor"
 
 [[packages]]
 repository = "1xyz/pryrite"
@@ -278,6 +280,9 @@ repository = "aristocratos/btop"
 
 [[packages]]
 repository = "arl/gitmux"
+
+[[packages]]
+repository = "armgabrielyan/deadbranch"
 
 [[packages]]
 repository = "Arriven/db1000n"
