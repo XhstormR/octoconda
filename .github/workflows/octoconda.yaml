@@ -127,7 +127,7 @@ jobs:
         shell: bash
 
       - name: Restore state cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .octoconda-state.json
           key: octoconda-state-${{ matrix.name }}
