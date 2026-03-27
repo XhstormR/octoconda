@@ -184,6 +184,7 @@ repository = "ankitpokhrel/jira-cli"
 
 [[packages]]
 repository = "anomalyco/opencode"
+platforms = { linux-64 = "^opencode-linux-x64.tar.gz$" }
 
 [[packages]]
 repository = "anordal/shellharden"
