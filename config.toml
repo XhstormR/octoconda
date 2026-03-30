@@ -70,6 +70,8 @@ repository = "adhocteam/ssm"
 repository = "aduros/wasm4"
 platforms = { win-32 = "^w4-windows.zip$" }
 
+[[packages]]
+repository = "adolfousier/agentverse"
 
 [[packages]]
 repository = "aereal/jsondiff"
@@ -197,6 +199,9 @@ repository = "antonmedv/fx"
 
 [[packages]]
 repository = "antonmedv/walk"
+
+[[packages]]
+repository = "aome510/spotify-player"
 
 [[packages]]
 repository = "apache/camel-k"
@@ -3237,6 +3242,9 @@ deprecated = true
 repository = "lusingander/ddv"
 
 [[packages]]
+repository = "lusingander/lpx"
+
+[[packages]]
 repository = "lusingander/serie"
 
 [[packages]]
@@ -5250,6 +5258,9 @@ repository = "taskctl/taskctl"
 
 [[packages]]
 repository = "tassiovirginio/try-rs"
+
+[[packages]]
+repository = "Tatayoyoh/deezer-tui"
 
 [[packages]]
 repository = "tattoy-org/tattoy"
