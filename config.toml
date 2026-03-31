@@ -5570,6 +5570,9 @@ repository = "uzimaru0000/tv"
 repository = "variadico/noti"
 
 [[packages]]
+repository = "vectordotdev/vector"
+
+[[packages]]
 repository = "veeso/termscp"
 
 [[packages]]
