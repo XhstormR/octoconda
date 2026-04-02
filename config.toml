@@ -5439,6 +5439,9 @@ repository = "tomohiro/gyazo-cli"
 repository = "TomWright/dasel"
 
 [[packages]]
+repository = "tontinton/maki"
+
+[[packages]]
 repository = "topgrade-rs/topgrade"
 
 [[packages]]
