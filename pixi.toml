@@ -6,8 +6,13 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
+add-repo = { cmd = "python scripts/add_repo.py" }
+rebalance-repos = { cmd = "python scripts/rebalance_repos.py" }
 
 [dependencies]
 actionlint = "*"
 zizmor = "*"
 rattler-build = "*"
+python = ">=3.12"
+requests = "*"
+beautifulsoup4 = "*"

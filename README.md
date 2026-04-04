@@ -17,6 +17,30 @@ avoid duplicates.
 
 For best results use the GitHub action runner and do not run this directly! See [`.github/workflows/octoconda.yaml`](./.github/workflows/octoconda.yaml) for an example.
 
+## Adding New Repositories
+
+Use the `add-repo` script to discover and add new GitHub repositories to
+`config.toml`. It can scan a web page for GitHub links or accept a single
+repo URL directly. Repos are filtered: only those with binary release assets
+(and not already in `config.toml`) are added.
+
+```sh
+# Scan a page for new repos and add them to config.toml
+pixi run add-repo https://example.com/cool-cli-tools
+
+# Add a single repo directly
+pixi run add-repo https://github.com/owner/repo
+
+# Preview without modifying config.toml
+pixi run add-repo --dry-run https://example.com/cool-cli-tools
+
+# Use a different config file
+pixi run add-repo -c path/to/config.toml https://example.com/page
+```
+
+A `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or `gh auth login`) is
+recommended to avoid GitHub API rate limits.
+
 ## Configuration File
 
 The configuration file is TOML. It has two sections: a `[conda]` table and one
