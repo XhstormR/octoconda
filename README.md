@@ -41,6 +41,20 @@ pixi run add-repo -c path/to/config.toml https://example.com/page
 A `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or `gh auth login`) is
 recommended to avoid GitHub API rate limits.
 
+## Testing a Single Repository
+
+Use the `build-one` task to generate and build packages for a single
+repository locally, without uploading anything. Results are placed in
+`test-output/` (git-ignored).
+
+```sh
+pixi run build-one owner/repo
+```
+
+This runs Octoconda filtered to the given repo, then builds each generated
+recipe with `rattler-build build`. Built packages end up in
+`test-output/packages/`.
+
 ## Configuration File
 
 The configuration file is TOML. It has two sections: a `[conda]` table and one

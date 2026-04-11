@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+REPO="${1:?Usage: build_one.sh <owner/repo>}"
+OUTPUT_DIR="test-output"
+
+mkdir -p "${OUTPUT_DIR}"
+
+echo "==> Generating recipes for ${REPO} into ${OUTPUT_DIR}/"
+cargo run -- --filter "^${REPO}$" --work-dir "${OUTPUT_DIR}" --keep-temporary-data
+
+# Find and build all generated recipes (without uploading)
+mapfile -t RECIPES < <(find "${OUTPUT_DIR}" -type f -name recipe.yaml)
+RECIPE_COUNT=${#RECIPES[@]}
+
+if [ "${RECIPE_COUNT}" -eq 0 ]; then
+  echo "No recipes generated for ${REPO}"
+  exit 0
+fi
+
+echo "==> Building ${RECIPE_COUNT} recipe(s)"
+
+SUCCESS=0
+FAILED=0
+
+for recipe in "${RECIPES[@]}"; do
+  PACKAGE_DIR=$(dirname "$recipe")
+  PLATFORM_DIR=$(dirname "$PACKAGE_DIR")
+  package=$(basename "$PACKAGE_DIR")
+  platform=$(basename "$PLATFORM_DIR")
+
+  echo "******* ${package} [${platform}] *******"
+  if (cd "${PACKAGE_DIR}" && rattler-build build --recipe recipe.yaml --target-platform="${platform}" --output-dir="${OUTPUT_DIR}/packages"); then
+    SUCCESS=$((SUCCESS + 1))
+  else
+    FAILED=$((FAILED + 1))
+  fi
+done
+
+echo
+echo "Done: ${SUCCESS} succeeded, ${FAILED} failed (${RECIPE_COUNT} total)"

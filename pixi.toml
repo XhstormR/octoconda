@@ -8,6 +8,7 @@ version = "0.1.0"
 [tasks]
 add-repo = { cmd = "python scripts/add_repo.py" }
 rebalance-repos = { cmd = "python scripts/rebalance_repos.py" }
+build-one = { cmd = "bash scripts/build_one.sh" }
 
 [dependencies]
 actionlint = "*"

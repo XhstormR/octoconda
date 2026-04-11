@@ -186,12 +186,16 @@ def add_repos_to_config(config_path: str, new_slugs: list[str],
             all_names.add(default_name)
         blocks.append(block)
 
+    # Normalize trailing whitespace so blank lines don't accumulate
+    blocks = [b.rstrip() for b in blocks]
+
     # Sort all blocks case-insensitively by repository
     blocks.sort(key=lambda b: block_repo(b).lower())
 
     with open(config_path, "w") as f:
         f.write(header)
-        f.write("\n".join(blocks))
+        f.write("\n\n".join(blocks))
+        f.write("\n")
 
     print(f"Added {len(new_slugs)} repo(s) to {config_path}", file=sys.stderr)
 

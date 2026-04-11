@@ -5,6 +5,7 @@
 
 /target
 work-dir/
+test-output/
 
 # pixi environments
 .pixi/*
