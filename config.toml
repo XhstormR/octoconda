@@ -490,10 +490,6 @@ repository = "babarot/vtest"
 deprecated = true
 
 [[packages]]
-repository = "badlogic/pi-mono"
-release-prefix = "pi"
-
-[[packages]]
 repository = "bahdotsh/wrkflw"
 
 [[packages]]
