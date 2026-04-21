@@ -4,6 +4,10 @@ set -e
 REPO="${1:?Usage: build_one.sh <owner/repo>}"
 OUTPUT_DIR="test-output"
 
+# Wipe any artefacts from a previous run so the generator's File::create_new
+# calls for build.sh / env.sh don't fail, and stale recipes from other repos
+# don't leak into this build.
+rm -rf "${OUTPUT_DIR:?}"
 mkdir -p "${OUTPUT_DIR}"
 
 echo "==> Generating recipes for ${REPO} into ${OUTPUT_DIR}/"
