@@ -97,7 +97,10 @@ pub fn filter_releases_for_package(
     for release in releases {
         let tag = &release.tag_name;
 
-        let tag = if let Some(t) = tag.strip_prefix(&format!("{package_name}_")) {
+        let tag = if let Some(t) = tag
+            .strip_prefix(&format!("{package_name}_"))
+            .or_else(|| tag.strip_prefix(&format!("{package_name}-")))
+        {
             t.to_string()
         } else {
             tag.to_string()
@@ -128,4 +131,73 @@ pub fn filter_releases_for_package(
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn release_with_tag(tag: &str) -> octocrab::models::repos::Release {
+        let value = serde_json::json!({
+            "url": "https://example.invalid/",
+            "html_url": "https://example.invalid/",
+            "assets_url": "https://example.invalid/",
+            "upload_url": "https://example.invalid/",
+            "tarball_url": null,
+            "zipball_url": null,
+            "id": 1,
+            "node_id": "n",
+            "tag_name": tag,
+            "target_commitish": "main",
+            "name": null,
+            "body": null,
+            "draft": false,
+            "prerelease": false,
+            "created_at": null,
+            "published_at": null,
+            "author": null,
+            "assets": [],
+        });
+        serde_json::from_value(value).expect("build Release")
+    }
+
+    #[test]
+    fn parses_hyphenated_package_prefix() {
+        // oven-sh/bun tags look like `bun-v1.3.13`.
+        let releases = vec![release_with_tag("bun-v1.3.13")];
+        let result = filter_releases_for_package(&releases, "bun", 10);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, ("1.3.13".to_string(), 0));
+    }
+
+    #[test]
+    fn parses_underscored_package_prefix() {
+        let releases = vec![release_with_tag("foo_v2.0.0")];
+        let result = filter_releases_for_package(&releases, "foo", 10);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, ("2.0.0".to_string(), 0));
+    }
+
+    #[test]
+    fn parses_bare_v_prefix() {
+        let releases = vec![release_with_tag("v0.1.2")];
+        let result = filter_releases_for_package(&releases, "whatever", 10);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, ("0.1.2".to_string(), 0));
+    }
+
+    #[test]
+    fn parses_build_suffix() {
+        let releases = vec![release_with_tag("v1.2.3-4")];
+        let result = filter_releases_for_package(&releases, "pkg", 10);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, ("1.2.3".to_string(), 4));
+    }
+
+    #[test]
+    fn rejects_non_version_tag() {
+        let releases = vec![release_with_tag("nightly")];
+        let result = filter_releases_for_package(&releases, "pkg", 10);
+        assert!(result.is_empty());
+    }
 }
