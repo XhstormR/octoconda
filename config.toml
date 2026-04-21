@@ -4882,6 +4882,21 @@ repository = "sl1pm4t/k2tf"
 repository = "slackhq/nebula"
 
 [[packages]]
+repository = "slint-ui/slint"
+name = "slint-compiler"
+release-prefix = "slint-compiler"
+
+[[packages]]
+repository = "slint-ui/slint"
+name = "slint-lsp"
+release-prefix = "slint-lsp"
+
+[[packages]]
+repository = "slint-ui/slint"
+name = "slint-viewer"
+release-prefix = "slint-viewer"
+
+[[packages]]
 repository = "slok/agebox"
 
 [[packages]]
