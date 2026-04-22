@@ -4592,6 +4592,9 @@ repository = "sachaos/toggl"
 repository = "sachaos/viddy"
 
 [[packages]]
+repository = "SagerNet/sing-box"
+
+[[packages]]
 repository = "sacloud/usacloud"
 
 [[packages]]
