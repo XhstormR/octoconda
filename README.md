@@ -62,22 +62,25 @@ or more `[[packages]]` entries.
 
 ### `[conda]`
 
-| Key | Required | Description |
-|---|---|---|
-| `channel` | yes | Conda channel used to check for existing versions. Can be a short name (e.g. `github-releases`) or a full `https://prefix.dev/...` URL. |
-| `max-import-releases` | no | Maximum number of releases to import initially. Defaults to all releases releases. |
+| Key                   | Required | Description                                                                                                                             |
+| --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `channel`             | yes      | Conda channel used to check for existing versions. Can be a short name (e.g. `github-releases`) or a full `https://prefix.dev/...` URL. |
+| `max-import-releases` | no       | Maximum number of releases to import initially. Defaults to all releases releases.                                                      |
 
 ### `[[packages]]`
 
 Each `[[packages]]` entry describes a GitHub repository whose releases should
 be packaged.
 
-| Key | Required | Description |
-|---|---|---|
-| `repository` | yes | GitHub repository in `owner/repo` format. |
-| `name` | no | Package name used in the Conda channel. Defaults to the repository name (the part after `/`). |
-| `release-prefix` | no | Expected prefix of release binary filenames. Defaults to the package name. Set to `""` to disable prefix matching. |
-| `platforms` | no | Override the default platform detection patterns. See [Platform Patterns](#platform-patterns) below. |
+| Key              | Required | Description                                                                                                                                                                                                                                                                                         |
+| ---------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repository`     | yes      | GitHub repository in `owner/repo` format.                                                                                                                                                                                                                                                           |
+| `name`           | no       | Package name used in the Conda channel. Defaults to the repository name (the part after `/`).                                                                                                                                                                                                       |
+| `release-prefix` | no       | Expected prefix of release binary filenames. Defaults to the package name. Set to `""` to disable prefix matching.                                                                                                                                                                                  |
+| `tag-prefix`     | no       | Custom prefix to strip from release tags before version parsing. When set, only tags starting with this prefix are considered and the prefix is removed to extract the version.                                                                                                                     |
+| `platforms`      | no       | Override the default platform detection patterns. See [Platform Patterns](#platform-patterns) below.                                                                                                                                                                                                |
+| `bundle`         | no       | When `true`, installs the entire release tree under `$PREFIX/lib/<name>/` instead of flattening into `$PREFIX/bin/`. Useful for complex applications like JDKs or `.app` bundles. Defaults to `false`.                                                                                              |
+| `expose`         | no       | List of glob patterns (relative to the bundle root) whose matches are symlinked into `$PREFIX/bin/`. Requires `bundle = true`. On macOS the script automatically tries `Home/<pattern>` and `MacOS/<pattern>` prefixes if the bare pattern has no matches, so a single config works cross-platform. |
 
 ### Minimal Example
 
@@ -135,7 +138,7 @@ repository = "owner/repo"
 platforms = { linux-64 = ["my-custom-regex-.*linux"] }
 ```
 
-**Replace with a single regex** (when `name` is *not* set):
+**Replace with a single regex** (when `name` is _not_ set):
 
 ```toml
 [[packages]]
@@ -143,7 +146,7 @@ repository = "owner/repo"
 platforms = { linux-64 = "my-custom-regex-.*linux" }
 ```
 
-**Prepend the package name** to default patterns (when `name` *is* set).
+**Prepend the package name** to default patterns (when `name` _is_ set).
 Providing a plain string while `name` is set prepends `<name>.*` to each
 default pattern for that platform, effectively narrowing matching to assets
 that start with the package name:
@@ -157,10 +160,10 @@ platforms = { linux-64 = "" }
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `GITHUB_TOKEN` | Personal access token for GitHub API authentication (preferred). |
-| `GITHUB_ACCESS_TOKEN` | Alternative user access token for GitHub API authentication. |
+| Variable              | Description                                                      |
+| --------------------- | ---------------------------------------------------------------- |
+| `GITHUB_TOKEN`        | Personal access token for GitHub API authentication (preferred). |
+| `GITHUB_ACCESS_TOKEN` | Alternative user access token for GitHub API authentication.     |
 
 Without either token, API calls are made anonymously and subject to GitHub's
 unauthenticated rate limit (~60 requests/hour).

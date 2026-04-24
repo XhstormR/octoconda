@@ -25,30 +25,12 @@ while [ "$STEP" -lt "$MAX_STEPS" ]; do
     FILE_TYPE=$(file -b "$SRC_FILE")
     echo "Step ${STEP}: ${FILE_TYPE}"
     case "$FILE_TYPE" in
-        *Zip\ archive* | *zip\ archive*)
-            ( cd "$PREFIX" && unzip -n "$SRC_FILE" )
-            # Delete extra stuff Macs apparently stuffed into zip files:
-            rm -rf "$PREFIX/__MACOSX" || true
+        *Zip\ archive* | *zip\ archive* | *tar\ archive* | *7-zip\ archive*)
+            ( cd "$PREFIX" && 7zz x -y -snld -xr!__MACOSX "$SRC_FILE" )
             break
             ;;
-        *tar\ archive*)
-            ( cd "$PREFIX" && tar -xf "$SRC_FILE" )
-            break
-            ;;
-        *gzip\ compressed*)
-            gzip -dc < "$SRC_FILE" > "${SRC_FILE}.tmp"
-            mv "${SRC_FILE}.tmp" "$SRC_FILE"
-            ;;
-        *XZ\ compressed*)
-            xz -dc < "$SRC_FILE" > "${SRC_FILE}.tmp"
-            mv "${SRC_FILE}.tmp" "$SRC_FILE"
-            ;;
-        *Zstandard\ compressed* | *zstd\ compressed*)
-            zstd -dc < "$SRC_FILE" > "${SRC_FILE}.tmp"
-            mv "${SRC_FILE}.tmp" "$SRC_FILE"
-            ;;
-        *bzip2\ compressed*)
-            bzip2 -dc < "$SRC_FILE" > "${SRC_FILE}.tmp"
+        *gzip\ compressed* | *XZ\ compressed* | *Zstandard\ compressed* | *zstd\ compressed* | *bzip2\ compressed*)
+            7zz e -so -snld "$SRC_FILE" > "${SRC_FILE}.tmp"
             mv "${SRC_FILE}.tmp" "$SRC_FILE"
             ;;
         *PE32+* | *PE32*)
@@ -91,6 +73,47 @@ while [ "$(find . -mindepth 1 -maxdepth 1 -type d -not -name conda-meta | wc -l)
         rmdir "${TMPNAME}"
     fi
 done
+
+# ── Bundle mode ──
+if [ "${OCTOCONDA_BUNDLE:-0}" = "1" ]; then
+    BUNDLE_TMP=".bundle-tmp-$$"
+    mkdir "${BUNDLE_TMP}"
+    for f in *; do
+        case "$f" in
+            conda-meta|"${BUNDLE_TMP}") ;;
+            *) mv "$f" "${BUNDLE_TMP}/" ;;
+        esac
+    done
+
+    mkdir -p lib
+    mv "${BUNDLE_TMP}" "lib/${PKG_NAME}"
+
+    if [ -n "${OCTOCONDA_EXPOSE:-}" ]; then
+        mkdir -p bin
+        cd "lib/${PKG_NAME}" || exit 3
+        shopt -s nullglob
+        IFS='|' read -ra patterns <<< "${OCTOCONDA_EXPOSE}"
+        for pattern in "${patterns[@]}"; do
+            matched=false
+            for prefix in "" "Home/" "MacOS/"; do
+                for f in ${prefix}${pattern}; do
+                    if [ -f "$f" ] || [ -L "$f" ]; then
+                        base=$(basename "$f")
+                        ln -sf "../lib/${PKG_NAME}/${f}" "${PREFIX}/bin/${base}"
+                        chmod 755 "$f" 2>/dev/null || true
+                        matched=true
+                    fi
+                done
+                $matched && break
+            done
+        done
+        shopt -u nullglob
+    fi
+
+    shopt -u dotglob
+    popd || exit 3
+    exit 0
+fi
 
 # Move all executable files into bin
 mkdir -p bin

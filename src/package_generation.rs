@@ -646,13 +646,14 @@ about:
 
 fn generate_rattler_build_recipe(
     work_dir: &Path,
-    package_name: &str,
+    package: &Package,
     package_version: &str,
     build_number: u32,
     target_platform: &Platform,
     repository: &octocrab::models::Repository,
     asset: &octocrab::models::repos::Asset,
 ) -> anyhow::Result<PathBuf> {
+    let package_name = &package.name;
     let platform_dir = work_dir.join(format!("{target_platform}",));
     let recipe_dir = platform_dir.join(format!("{package_name}-{package_version}-{build_number}",));
     std::fs::create_dir_all(&recipe_dir).context("Failed to create recipe directory")?;
@@ -683,6 +684,36 @@ fn generate_rattler_build_recipe(
     let package_version = yaml_escape(package_version);
     let archive = yaml_escape(&archive);
 
+    let (build_env_section, tests_section) = if package.bundle {
+        let mut env_lines = String::from("  script:\n    env:\n      OCTOCONDA_BUNDLE: \"1\"");
+        if !package.expose.is_empty() {
+            let expose_val = package.expose.join("|");
+            env_lines.push_str(&format!("\n      OCTOCONDA_EXPOSE: \"{expose_val}\""));
+        }
+        let tests = format!(
+            r#"tests:
+  - package_contents:
+      files:
+        not_exists:
+          - .*
+      lib:
+        - "{pn}/*"
+"#
+        );
+        (env_lines, tests)
+    } else {
+        let tests = r#"tests:
+  - package_contents:
+      files:
+        not_exists:
+          - .*
+      bin:
+        - "*"
+"#
+        .to_string();
+        (String::new(), tests)
+    };
+
     let content = format!(
         r#"package:
   name: {pn}
@@ -698,14 +729,9 @@ build:
     binary_relocation: false
   prefix_detection:
     ignore: true
+{build_env_section}
 
-tests:
-  - package_contents:
-      files:
-        not_exists:
-          - .*
-      bin:
-        - "*"
+{tests_section}
 
 {about}"#,
     );
@@ -729,7 +755,7 @@ fn generate_package(
 ) -> PackagingStatus {
     match generate_rattler_build_recipe(
         work_dir,
-        &package.name,
+        package,
         package_version,
         build_number,
         target_platform,

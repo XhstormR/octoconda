@@ -11,6 +11,7 @@ rebalance-repos = { cmd = "python scripts/rebalance_repos.py" }
 build-one = { cmd = "bash scripts/build_one.sh" }
 
 [dependencies]
+7zip = "*"
 actionlint = "*"
 zizmor = "*"
 rattler-build = "*"
