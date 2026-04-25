@@ -62,7 +62,7 @@ Entry point is `src/main.rs`, which drives a single end-to-end run:
 
 ### Recipe output layout
 
-Recipes land at `<work-dir>/<platform>/<package>/recipe.yaml`. `build_one.sh`
+Recipes land at `<work-dir>/<platform>/<package>-<version>-<build>/recipe.yaml`. `build_one.sh`
 discovers them with `find ... -name recipe.yaml` and runs
 `rattler-build build` per recipe; the production workflow uses
 `scripts/package_and_upload_all.sh` instead, which also uploads.

@@ -172,7 +172,7 @@ fn main() -> Result<(), anyhow::Error> {
                                     .iter()
                                     .map(|p| package_generation::PackageResult::GithubFailed {
                                         repository: p.repository.to_string(),
-                                        message: format!("{e}"),
+                                        message: format!("{e:#}"),
                                     })
                                     .collect();
                                 return Ok(results);

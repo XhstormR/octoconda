@@ -3,10 +3,12 @@
 
 import argparse
 import os
+import pathlib
 import re
+import shutil
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import tempfile
 
 import requests
 import tomllib
@@ -78,61 +80,127 @@ def load_known_repos(config_path: str) -> tuple[set[str], set[str]]:
     return slugs, names
 
 
-# Patterns that indicate a source-only archive (not a binary release)
-SOURCE_ARCHIVE_RE = re.compile(
-    r"^("
-    # Common source archive naming: <name>-<version>-source.tar.gz, etc.
-    r".*[-_.]source[-_.].*"
-    r"|.*[-_.]src[-_.].*"
-    r"|.*[-_.]sources[-_.].*"
-    # Bare version-only archives: v1.2.3.tar.gz, project-1.2.3.zip
-    r"|[a-zA-Z0-9_.-]*\d+\.\d+[a-zA-Z0-9_.+-]*\.(tar\.gz|tar\.bz2|tar\.xz|zip|tgz)"
-    r")$",
-    re.IGNORECASE,
-)
-
-# Keywords in asset names that suggest a binary/platform-specific build
-BINARY_HINTS_RE = re.compile(
-    r"(linux|darwin|macos|mac|windows|win|amd64|x86_64|x86-64|arm64|aarch64"
-    r"|i686|i386|armv[67]|mips|ppc|s390|riscv|musl|gnu"
-    r"|\.deb|\.rpm|\.apk|\.msi|\.exe|\.dmg|\.pkg|\.AppImage|\.snap|\.flatpak"
-    r"|\.wasm|\.so|\.dylib|\.dll)",
-    re.IGNORECASE,
-)
+def project_root() -> pathlib.Path:
+    """Return the octoconda project root (parent of this scripts/ directory)."""
+    return pathlib.Path(__file__).resolve().parent.parent
 
 
-def has_binary_release(slug: str, session: requests.Session) -> tuple[bool, str]:
-    """Check if a repo's latest release contains binary assets.
+def octoconda_command() -> list[str]:
+    """Return the command prefix to invoke octoconda.
 
-    Returns (passed, reason) where reason explains why it was skipped.
+    Prefers a prebuilt release binary; falls back to `cargo run --release`.
     """
-    url = f"https://api.github.com/repos/{slug}/releases/latest"
+    binary = project_root() / "target" / "release" / "octoconda"
+    if binary.is_file():
+        return [str(binary)]
+    if shutil.which("cargo"):
+        return ["cargo", "run", "--release", "--quiet", "--manifest-path",
+                str(project_root() / "Cargo.toml"), "--"]
+    print(
+        "Error: octoconda binary not found at target/release/octoconda and "
+        "`cargo` is not on PATH. Run `cargo build --release` first.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def conda_channel_from_config(config_path: str) -> str:
+    """Read [conda].channel from an existing config.toml."""
+    with open(config_path, "rb") as f:
+        cfg = tomllib.load(f)
+    channel = cfg.get("conda", {}).get("channel")
+    if not channel:
+        print(
+            f"Error: '{config_path}' is missing [conda].channel; "
+            "octoconda needs it to check existing versions.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return channel
+
+
+def check_with_octoconda(
+    slugs: list[str], conda_channel: str,
+) -> tuple[set[str], dict[str, str]]:
+    """Run octoconda against the candidate slugs and return those that produce
+    at least one recipe.
+
+    Returns (passing_slugs, skip_reasons). `skip_reasons` maps each failing
+    slug to a one-line reason from octoconda's report.
+    """
+    if not slugs:
+        return set(), {}
+
+    work_dir = pathlib.Path(tempfile.mkdtemp(prefix="octoconda-add-repo."))
+    config_fd, config_path = tempfile.mkstemp(prefix="octoconda-add-repo.", suffix=".toml")
     try:
-        resp = session.get(url, timeout=15)
-    except requests.RequestException as e:
-        return False, f"request failed: {e}"
-    if resp.status_code == 404:
-        return False, "no releases or inaccessible"
-    if resp.status_code == 403:
-        remaining = resp.headers.get("x-ratelimit-remaining", "?")
-        if remaining == "0":
-            return False, "GitHub API rate limit exceeded - set GITHUB_TOKEN or GH_TOKEN"
-        return False, "access forbidden"
-    if resp.status_code != 200:
-        return False, f"API error {resp.status_code}"
+        with os.fdopen(config_fd, "w") as f:
+            f.write("[conda]\n")
+            f.write(f'channel = "{conda_channel}"\n')
+            f.write("max-import-releases = 1\n\n")
+            for slug in slugs:
+                f.write("[[packages]]\n")
+                f.write(f'repository = "{slug}"\n\n')
 
-    release = resp.json()
-    assets = release.get("assets", [])
-    if not assets:
-        return False, "latest release has no assets"
+        cmd = octoconda_command() + [
+            "--config-file", config_path,
+            "--work-dir", str(work_dir),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+        if result.returncode != 0:
+            print(
+                f"octoconda exited with status {result.returncode}; "
+                f"stderr tail:\n{result.stderr[-2000:]}",
+                file=sys.stderr,
+            )
 
-    for asset in assets:
-        name = asset.get("name", "")
-        if BINARY_HINTS_RE.search(name) and not SOURCE_ARCHIVE_RE.match(name):
-            return True, ""
+        # Parse the report octoconda writes to status.txt to extract per-repo
+        # skip reasons (GitHub errors, no platform binary, etc.). The format
+        # comes from src/package_generation.rs::report_results.
+        skip_reasons: dict[str, str] = {}
+        status_path = work_dir / "status.txt"
+        if status_path.is_file():
+            skip_reasons = parse_skip_reasons(status_path.read_text(), slugs)
 
-    asset_names = ", ".join(a.get("name", "?") for a in assets)
-    return False, f"no binary assets in latest release ({asset_names})"
+        # A recipe lands at <work-dir>/<platform>/<package>-<version>-<build>/recipe.yaml.
+        # Treat a slug as passing if any platform produced a recipe for its
+        # default package name (lowercased repo basename).
+        passing: set[str] = set()
+        for slug in slugs:
+            pkg_name = slug.split("/", 1)[1].lower()
+            if any(work_dir.glob(f"*/{pkg_name}-*/recipe.yaml")):
+                passing.add(slug)
+        return passing, skip_reasons
+    finally:
+        try:
+            os.unlink(config_path)
+        except FileNotFoundError:
+            pass
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+
+_REPORT_SECTION_RE = re.compile(
+    r"^(GitHub errors|Recipe generation failures|No platform binary in release)",
+)
+
+
+def parse_skip_reasons(report: str, slugs: list[str]) -> dict[str, str]:
+    """Best-effort: scan octoconda's status report for owner/repo mentions
+    and tag each one with the section heading it appeared under."""
+    slug_set = {s.lower() for s in slugs}
+    reasons: dict[str, str] = {}
+    current_section: str | None = None
+    for raw_line in report.splitlines():
+        m = _REPORT_SECTION_RE.match(raw_line.lstrip())
+        if m:
+            current_section = m.group(1)
+            continue
+        if not current_section:
+            continue
+        for token in re.findall(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", raw_line):
+            if token.lower() in slug_set and token not in reasons:
+                reasons[token] = current_section
+    return reasons
 
 
 def add_repos_to_config(config_path: str, new_slugs: list[str],
@@ -200,28 +268,33 @@ def add_repos_to_config(config_path: str, new_slugs: list[str],
     print(f"Added {len(new_slugs)} repo(s) to {config_path}", file=sys.stderr)
 
 
-def make_github_session() -> requests.Session:
-    session = requests.Session()
-    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    if not gh_token:
+def ensure_github_token() -> None:
+    """Ensure GITHUB_TOKEN is set in this process's environment so the
+    octoconda subprocess inherits it. Falls back to GH_TOKEN, then to
+    `gh auth token`. Octoconda only reads GITHUB_TOKEN/GITHUB_ACCESS_TOKEN,
+    so GH_TOKEN alone is not enough.
+    """
+    if os.environ.get("GITHUB_TOKEN"):
+        return
+    token = os.environ.get("GH_TOKEN")
+    if not token:
         try:
             result = subprocess.run(
                 ["gh", "auth", "token"], capture_output=True, text=True, timeout=5,
             )
             if result.returncode == 0 and result.stdout.strip():
-                gh_token = result.stdout.strip()
+                token = result.stdout.strip()
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
-    if gh_token:
-        session.headers["Authorization"] = f"token {gh_token}"
+    if token:
+        os.environ["GITHUB_TOKEN"] = token
     else:
         print(
-            "Warning: No GitHub token found. API rate limit is 60 requests/hour.\n"
+            "Warning: No GitHub token found. Octoconda will hit anonymous "
+            "rate limits (~60 requests/hour).\n"
             "  Set GITHUB_TOKEN/GH_TOKEN or log in with: gh auth login",
             file=sys.stderr,
         )
-    session.headers["Accept"] = "application/vnd.github+json"
-    return session
 
 
 def main():
@@ -278,37 +351,38 @@ def main():
         print("No new GitHub repository URLs found.", file=sys.stderr)
         return
 
-    # Check GitHub API for releases, using a shared session for connection reuse
-    session = make_github_session()
-
-    print(f"Checking {len(repos)} repos for releases...", file=sys.stderr)
-
-    with_releases = []
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(has_binary_release, repo_slug(r), session): r for r in repos}
-        for future in as_completed(futures):
-            url = futures[future]
-            passed, reason = future.result()
-            if passed:
-                with_releases.append(url)
-            else:
-                print(f"  skipped ({reason}): {url}", file=sys.stderr)
-
-    with_releases.sort()
-
-    if not with_releases:
-        print("No new repos with releases found.", file=sys.stderr)
-        return
-
-    seen = set()
-    new_slugs = []
-    for r in with_releases:
+    # Deduplicate candidate slugs (preserving order).
+    seen: set[str] = set()
+    candidate_slugs: list[str] = []
+    for r in repos:
         slug = repo_slug(r)
         if slug.lower() not in seen:
             seen.add(slug.lower())
-            new_slugs.append(slug)
+            candidate_slugs.append(slug)
 
-    for slug in new_slugs:
+    ensure_github_token()
+    conda_channel = conda_channel_from_config(args.config)
+
+    print(
+        f"Checking {len(candidate_slugs)} repo(s) by running octoconda...",
+        file=sys.stderr,
+    )
+
+    passing, skip_reasons = check_with_octoconda(candidate_slugs, conda_channel)
+
+    for slug in candidate_slugs:
+        if slug in passing:
+            continue
+        reason = skip_reasons.get(slug, "no recipe generated by octoconda")
+        print(f"  skipped ({reason}): https://github.com/{slug}", file=sys.stderr)
+
+    new_slugs = [s for s in candidate_slugs if s in passing]
+
+    if not new_slugs:
+        print("No new repos with packageable releases found.", file=sys.stderr)
+        return
+
+    for slug in sorted(new_slugs, key=str.lower):
         print(slug)
 
     if not args.dry_run:

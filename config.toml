@@ -83,6 +83,9 @@ repository = "AfaanBilal/NanoCore"
 repository = "afnanenayet/diffsitter"
 
 [[packages]]
+repository = "agavra/tuicr"
+
+[[packages]]
 repository = "AGWA/git-crypt"
 
 [[packages]]
@@ -488,6 +491,9 @@ deprecated = true
 repository = "babarot/vtest"
 # INACTIVE: Repo is in "public archive" state
 deprecated = true
+
+[[packages]]
+repository = "bahdotsh/giff"
 
 [[packages]]
 repository = "bahdotsh/wrkflw"
@@ -1675,6 +1681,9 @@ repository = "fe3dback/go-arch-lint"
 repository = "FeLvi-zzz/tentez"
 
 [[packages]]
+repository = "Feromond/budget_tracker_tui"
+
+[[packages]]
 repository = "ffuf/ffuf"
 
 [[packages]]
@@ -1909,6 +1918,9 @@ deprecated = true
 
 [[packages]]
 repository = "git-lfs/git-lfs"
+
+[[packages]]
+repository = "git-pkgs/forge"
 
 [[packages]]
 repository = "git-town/git-town"
@@ -2627,6 +2639,9 @@ repository = "johnkerl/miller"
 
 [[packages]]
 repository = "JohnnyMorganz/StyLua"
+
+[[packages]]
+repository = "johnsideserf/siggy"
 
 [[packages]]
 repository = "jonaslu/ain"
@@ -3395,6 +3410,9 @@ repository = "mattermost/mmctl"
 deprecated = true
 
 [[packages]]
+repository = "matthart1983/netwatch"
+
+[[packages]]
 repository = "mattn/algia"
 
 [[packages]]
@@ -3649,6 +3667,9 @@ repository = "mrjackwills/oxker"
 repository = "mrjosh/helm-ls"
 
 [[packages]]
+repository = "mrkatebzadeh/darya"
+
+[[packages]]
 repository = "ms-jpq/sad"
 
 [[packages]]
@@ -3797,6 +3818,9 @@ repository = "nicarl/somafm"
 
 [[packages]]
 repository = "nickel-lang/nickel"
+
+[[packages]]
+repository = "nico2sh/kimun"
 
 [[packages]]
 repository = "NikitaCOEUR/dirvana"
